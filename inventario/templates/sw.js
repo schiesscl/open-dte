@@ -5,10 +5,10 @@ const OFFLINE_URL = "/static/offline.html";
 // Archivos básicos para que la app cargue el layout principal sin internet
 const ASSETS_TO_CACHE = [
   OFFLINE_URL,
-  "/static/css/bootstrap.min.css",
+  "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css",
   "/static/css/bootstrap-icons.css",
   "/static/css/style.css",
-  "/static/js/bootstrap.bundle.min.js",
+  "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js",
   "/static/js/localforage.min.js",
   "/static/js/offline-db.js",
   "/static/js/api.js",
