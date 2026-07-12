@@ -10242,5 +10242,59 @@
       "usuario": null,
       "fecha_despacho": "2026-05-26T23:32:37.220Z"
     }
+  },
+  {
+    "model": "auth.user",
+    "pk": 100,
+    "fields": {
+      "password": "pbkdf2_sha256$1200000$sm26jmzX3CMGP0b6BXv6o0$ITuok1AHLWCsH+mZabjjtkLc3qElJWfRuRII/1AwzuU=",
+      "last_login": "2026-07-12T00:00:00Z",
+      "is_superuser": true,
+      "username": "admin",
+      "first_name": "Administrador",
+      "last_name": "Demo",
+      "email": "admin@opendte.cl",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2026-07-12T00:00:00Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "auth.user",
+    "pk": 101,
+    "fields": {
+      "password": "pbkdf2_sha256$1200000$sm26jmzX3CMGP0b6BXv6o0$ITuok1AHLWCsH+mZabjjtkLc3qElJWfRuRII/1AwzuU=",
+      "last_login": "2026-07-12T00:00:00Z",
+      "is_superuser": false,
+      "username": "vendedor",
+      "first_name": "Vendedor",
+      "last_name": "Demo",
+      "email": "vendedor@opendte.cl",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-07-12T00:00:00Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "auth.user",
+    "pk": 102,
+    "fields": {
+      "password": "pbkdf2_sha256$1200000$sm26jmzX3CMGP0b6BXv6o0$ITuok1AHLWCsH+mZabjjtkLc3qElJWfRuRII/1AwzuU=",
+      "last_login": "2026-07-12T00:00:00Z",
+      "is_superuser": false,
+      "username": "operario",
+      "first_name": "Operario",
+      "last_name": "Demo",
+      "email": "operario@opendte.cl",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-07-12T00:00:00Z",
+      "groups": [],
+      "user_permissions": []
+    }
   }
 ]

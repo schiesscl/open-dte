@@ -48,7 +48,7 @@ urlpatterns = [
     path('compartida/eliminar/', views.eliminar_factura_compartida, name='eliminar_factura_compartida'),
     path('compartida/configurar/guardar/', views.guardar_configuracion, name='guardar_configuracion'),
     path('compartida/api/status/', views.compartida_api_status, name='compartida_api_status'),
-    path('accounts/login/', views.login_temporal, name='login_temporal'),
+    path('accounts/login/', views.login_demo, name='login_demo'),
 
     # --- DEMO RESET (JavaScript API) ---
     path('api/demo/reset/', views.api_demo_reset, name='api_demo_reset'),

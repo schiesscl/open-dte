@@ -1,8 +1,10 @@
 import os
 import shutil
 import logging
+import time
 from django.conf import settings
 from django.core.files import File
+from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect, get_object_or_404
@@ -14,6 +16,8 @@ from .utils import procesar_factura_xml, procesar_factura_pdf
 from .forms import ProductoForm, ClienteForm, FacturaForm
 
 logger = logging.getLogger(__name__)
+
+_LAST_RESET_TIME = 0
 
 def _mover_archivo_seguro(src, dst):
     """ Mueve un archivo a un destino, reemplazándolo si ya existe para evitar colisiones en Windows/Linux. """
@@ -27,8 +31,37 @@ def _mover_archivo_seguro(src, dst):
             logger.debug("No se pudo eliminar el destino anterior '%s' en _mover_archivo_seguro: %s", dst, e)
     shutil.move(src, dst)
 
+def login_demo(request):
+    """
+    Vista de login demo que permite inicio rápido por botones o credenciales.
+    """
+    next_url = request.GET.get('next', '') or request.POST.get('next', '') or '/'
+    
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '').strip()
+        
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            messages.success(request, f"¡Bienvenido! Has iniciado sesión como {user.first_name}.")
+            return redirect(next_url)
+        else:
+            messages.error(request, "Usuario o contraseña incorrectos de demostración.")
+            
+    return render(request, 'inventario/login.html', {'next': next_url})
+
+@login_required
 def dashboard(request):
     """ Vista principal del panel de control con filtrado por período de tiempo """
+    if getattr(settings, 'MODO_DEMO', False):
+        if request.user.username == 'vendedor':
+            messages.warning(request, "Acceso restringido: El perfil de Vendedor no tiene acceso al Panel de Control.")
+            return redirect('stock_vendedores')
+        elif request.user.username == 'operario':
+            messages.warning(request, "Acceso restringido: El perfil de Operario no tiene acceso al Panel de Control.")
+            return redirect('despacho')
+
     import datetime
     import calendar
     from django.utils import timezone
@@ -188,8 +221,14 @@ def dashboard(request):
     }
     return render(request, 'inventario/dashboard.html', contexto)
 
+@login_required
 def subir_documento(request):
     """ Vista que procesa el formulario del Modal """
+    if getattr(settings, 'MODO_DEMO', False):
+        if request.user.username in ['vendedor', 'operario']:
+            messages.error(request, "Acceso denegado: Tu perfil no tiene permisos para subir documentos.")
+            return redirect('stock_vendedores' if request.user.username == 'vendedor' else 'despacho')
+
     if request.method == 'POST':
         archivo = request.FILES.get('archivo_factura')
         if archivo:
@@ -216,8 +255,14 @@ def subir_documento(request):
 
     return redirect(referer)
 
+@login_required
 def lista_productos(request):
     """ Vista del inventario (CRUD Leer) """
+    if getattr(settings, 'MODO_DEMO', False):
+        if request.user.username == 'operario':
+            messages.warning(request, "Acceso restringido: El perfil de Operario no tiene acceso al Inventario.")
+            return redirect('despacho')
+
     productos = Producto.objects.prefetch_related('detallefactura_set__factura').all().order_by('codigo')
     form = ProductoForm()
 
@@ -230,13 +275,31 @@ def lista_productos(request):
         'guias': guias
     })
 
+@login_required
 def lista_clientes(request):
     """ Vista del directorio de clientes (CRUD Leer) """
+    if getattr(settings, 'MODO_DEMO', False):
+        if request.user.username == 'vendedor':
+            messages.warning(request, "Acceso restringido: El perfil de Vendedor no tiene acceso al Directorio de Clientes.")
+            return redirect('stock_vendedores')
+        elif request.user.username == 'operario':
+            messages.warning(request, "Acceso restringido: El perfil de Operario no tiene acceso al Directorio de Clientes.")
+            return redirect('despacho')
+
     clientes = Cliente.objects.all().order_by('razon_social')
     return render(request, 'inventario/lista_clientes.html', {'clientes': clientes})
 
+@login_required
 def lista_facturas(request):
     """ Vista del registro histórico de facturas, guías y notas de crédito (CRUD Leer) """
+    if getattr(settings, 'MODO_DEMO', False):
+        if request.user.username == 'vendedor':
+            messages.warning(request, "Acceso restringido: El perfil de Vendedor no tiene acceso al historial de Ventas.")
+            return redirect('stock_vendedores')
+        elif request.user.username == 'operario':
+            messages.warning(request, "Acceso restringido: El perfil de Operario no tiene acceso al historial de Ventas.")
+            return redirect('despacho')
+
     estado = request.GET.get('estado', 'PENDIENTE')
 
     if estado == 'TODAS':
@@ -470,7 +533,13 @@ def facturas_cliente(request, id):
     }
     return render(request, 'inventario/facturas_cliente.html', contexto)
 
+@login_required
 def preparar_despacho(request):
+    if getattr(settings, 'MODO_DEMO', False):
+        if request.user.username == 'vendedor':
+            messages.warning(request, "Acceso restringido: El perfil de Vendedor no tiene acceso al módulo de Despachos.")
+            return redirect('stock_vendedores')
+
     buscar = request.GET.get('buscar', '').strip()
     tipo = request.GET.get('tipo', '').strip()
     factura = None
@@ -639,10 +708,19 @@ def procesar_carpeta_compartida_automatico(user=None):
 
     return resultados
 
+@login_required
 def lista_compartida(request):
     """
     Lista las facturas depositadas en la carpeta compartida que están listas para importar.
     """
+    if getattr(settings, 'MODO_DEMO', False):
+        if request.user.username == 'vendedor':
+            messages.warning(request, "Acceso restringido: El perfil de Vendedor no tiene acceso al Buzón Compartido.")
+            return redirect('stock_vendedores')
+        elif request.user.username == 'operario':
+            messages.warning(request, "Acceso restringido: El perfil de Operario no tiene acceso al Buzón Compartido.")
+            return redirect('despacho')
+
     from .config import get_shared_dirs
     incoming_dir, _ = get_shared_dirs()
     os.makedirs(incoming_dir, exist_ok=True)
@@ -840,10 +918,16 @@ def eliminar_factura_compartida(request):
 
     return redirect('lista_compartida')
 
+@login_required
 def guardar_configuracion(request):
     """
     Guarda la configuración de las rutas de las carpetas compartidas.
     """
+    if getattr(settings, 'MODO_DEMO', False):
+        if request.user.username in ['vendedor', 'operario']:
+            messages.error(request, "Acceso denegado: Tu perfil no tiene permisos para configurar carpetas.")
+            return redirect('stock_vendedores' if request.user.username == 'vendedor' else 'despacho')
+
     if request.method == 'POST':
         incoming = request.POST.get('incoming', '').strip()
         processed = request.POST.get('processed', '').strip()
@@ -851,6 +935,14 @@ def guardar_configuracion(request):
         if not incoming or not processed:
             messages.error(request, "Ambas rutas son requeridas.")
         else:
+            if getattr(settings, 'MODO_DEMO', False):
+                # Sandbox validation: Paths must be strictly inside the media/ folder
+                inc_lower = incoming.lower().replace('\\', '/')
+                prc_lower = processed.lower().replace('\\', '/')
+                if 'media/' not in inc_lower or 'media/' not in prc_lower:
+                    messages.error(request, "Acceso denegado: Por razones de seguridad en MODO_DEMO, las rutas deben ubicarse dentro de la carpeta 'media/' del proyecto.")
+                    return redirect('lista_compartida')
+
             if not os.path.exists(incoming):
                 messages.error(request, f"La carpeta de Entrada no existe: {incoming}")
             elif not os.path.isdir(incoming):
@@ -1510,6 +1602,7 @@ def procesar_importar_excel(request):
         'codigos_no_encontrados': codigos_no_encontrados
     })
 
+@login_required
 def stock_vendedores(request):
     """ Vista simplificada de stock para vendedores """
     productos = Producto.objects.all().order_by('codigo')
@@ -1529,13 +1622,28 @@ def api_demo_reset(request):
 
     Elimina todos los datos existentes y carga la fixture demo_seed.json.
     """
+    global _LAST_RESET_TIME
     from django.http import JsonResponse
     from django.core.management import call_command
+    from django.conf import settings
     from .models import (
         Factura, DetalleFactura, Despacho, Cliente, Producto,
         GuiaAbastecimiento, DetalleGuiaAbastecimiento, HistorialStock,
         Sucursal, Bodega
     )
+
+    MODO_DEMO = getattr(settings, 'MODO_DEMO', False)
+
+    if MODO_DEMO:
+        current_time = time.time()
+        elapsed = current_time - _LAST_RESET_TIME
+        if elapsed < 30:
+            remaining = int(30 - elapsed)
+            return JsonResponse({
+                'exito': False,
+                'mensaje': f'El restablecimiento está bloqueado temporalmente. Por favor, espera {remaining} segundos.'
+            }, status=429)
+        _LAST_RESET_TIME = current_time
 
     try:
         with transaction.atomic():

@@ -26,5 +26,6 @@ def compartida_count(request):
     return {
         'cant_compartidas': cant,
         'shared_incoming_dir': incoming_dir,
-        'shared_processed_dir': processed_dir
+        'shared_processed_dir': processed_dir,
+        'MODO_DEMO': getattr(settings, 'MODO_DEMO', False)
     }

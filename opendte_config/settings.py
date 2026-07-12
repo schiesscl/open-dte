@@ -139,3 +139,8 @@ SHARED_PROCESSED_DIR = os.path.join(MEDIA_ROOT, 'compartida_procesadas')
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Configuración de Modo Demo
+MODO_DEMO = os.environ.get('MODO_DEMO', 'False') == 'True'
+LOGIN_URL = 'login_demo'
+

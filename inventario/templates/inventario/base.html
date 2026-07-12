@@ -59,12 +59,23 @@
                     <a href="{% url 'dashboard' %}" class="d-inline-block">
                         <img src="{% static 'img/logo.webp' %}" alt="Logo OpenDTE" class="img-fluid px-2" style="max-height: 50px;">
                     </a>
+                    {% if user.is_authenticated %}
+                    <div class="mt-2 small text-muted">
+                        <span class="badge bg-secondary px-2 py-1">
+                            <i class="bi bi-person-fill me-1"></i> {{ user.first_name }}
+                        </span>
+                        <a href="/accounts/login/" class="ms-1 text-danger text-decoration-none" title="Cerrar sesión / Cambiar perfil">
+                            <i class="bi bi-box-arrow-right"></i>
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
             <!-- Navegación (Scrolleable) -->
             <div class="sidebar-nav-scroll">
                 <ul class="sidebar-nav">
+                    {% if not MODO_DEMO or user.username == 'admin' or user.is_superuser %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
                             <i class="bi bi-house-door-fill"></i> Panel de Control
@@ -80,6 +91,9 @@
                             <i class="bi bi-people-fill"></i> Clientes
                         </a>
                     </li>
+                    {% endif %}
+
+                    {% if not MODO_DEMO or user.username == 'admin' or user.is_superuser or user.username == 'vendedor' %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'lista_productos' or request.resolver_match.url_name == 'editar_producto' %}active{% endif %}" href="{% url 'lista_productos' %}">
                             <i class="bi bi-box-seam-fill"></i> Inventario
@@ -90,6 +104,9 @@
                             <i class="bi bi-boxes"></i> Stock Bodega Temuco
                         </a>
                     </li>
+                    {% endif %}
+
+                    {% if not MODO_DEMO or user.username == 'admin' or user.is_superuser or user.username == 'operario' %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'despacho' %}active{% endif %}" href="{% url 'despacho' %}">
                             <i class="bi bi-truck text-fs-yellow"></i> Preparar Despacho
@@ -100,6 +117,9 @@
                             <i class="bi bi-clock-history"></i> Historial Despachos
                         </a>
                     </li>
+                    {% endif %}
+
+                    {% if not MODO_DEMO or user.username == 'admin' or user.is_superuser %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'lista_compartida' %}active{% endif %}" href="{% url 'lista_compartida' %}">
                             <i class="bi bi-folder-symlink-fill"></i> Buzón Compartido
@@ -108,6 +128,7 @@
                             {% endif %}
                         </a>
                     </li>
+                    {% endif %}
                 </ul>
             </div>
 
@@ -145,6 +166,7 @@
             <div class="offcanvas-body d-flex flex-column justify-content-between p-3">
                 <div>
                     <ul class="sidebar-nav">
+                        {% if not MODO_DEMO or user.username == 'admin' or user.is_superuser %}
                         <li class="nav-item" data-bs-dismiss="offcanvas">
                             <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
                                 <i class="bi bi-house-door-fill"></i> Panel de Control
@@ -160,6 +182,9 @@
                                 <i class="bi bi-people-fill"></i> Clientes
                             </a>
                         </li>
+                        {% endif %}
+
+                        {% if not MODO_DEMO or user.username == 'admin' or user.is_superuser or user.username == 'vendedor' %}
                         <li class="nav-item" data-bs-dismiss="offcanvas">
                             <a class="nav-link {% if request.resolver_match.url_name == 'lista_productos' or request.resolver_match.url_name == 'editar_producto' %}active{% endif %}" href="{% url 'lista_productos' %}">
                                 <i class="bi bi-box-seam-fill"></i> Inventario
@@ -170,6 +195,9 @@
                                 <i class="bi bi-boxes"></i> Stock Bodega Temuco
                             </a>
                         </li>
+                        {% endif %}
+
+                        {% if not MODO_DEMO or user.username == 'admin' or user.is_superuser or user.username == 'operario' %}
                         <li class="nav-item" data-bs-dismiss="offcanvas">
                             <a class="nav-link {% if request.resolver_match.url_name == 'despacho' %}active{% endif %}" href="{% url 'despacho' %}">
                                 <i class="bi bi-truck text-fs-yellow"></i> Preparar Despacho
@@ -180,6 +208,9 @@
                                 <i class="bi bi-clock-history"></i> Historial Despachos
                             </a>
                         </li>
+                        {% endif %}
+
+                        {% if not MODO_DEMO or user.username == 'admin' or user.is_superuser %}
                         <li class="nav-item" data-bs-dismiss="offcanvas">
                             <a class="nav-link {% if request.resolver_match.url_name == 'lista_compartida' %}active{% endif %}" href="{% url 'lista_compartida' %}">
                                 <i class="bi bi-folder-symlink-fill"></i> Buzón Compartido
@@ -188,6 +219,7 @@
                                 {% endif %}
                             </a>
                         </li>
+                        {% endif %}
                     </ul>
                 </div>
                 

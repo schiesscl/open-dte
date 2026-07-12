@@ -30,6 +30,32 @@
 
 </div>
 
+<!-- Modal Educativo Modo Demo Sincronización -->
+<div class="modal fade" id="modalExplicativoDemoSync" tabindex="-1" aria-labelledby="modalExplicativoDemoSyncLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg text-dark">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold" id="modalExplicativoDemoSyncLabel">
+                    <i class="bi bi-info-circle-fill text-warning me-2"></i>Sincronización Local Offline
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 bg-light text-dark text-start">
+                <p>Esta es una característica exclusiva para entornos locales corporativos (On-Premise).</p>
+                <p>En producción, permite vincular cualquier carpeta de tu computador (ej. <code>C:\MisFacturas</code>) para que los documentos PDF/XML colocados allí se suban de fondo en tiempo real al sistema.</p>
+                <div class="alert alert-warning py-2 px-3 small border-0 mb-3 text-dark">
+                    <i class="bi bi-shield-fill-exclamation me-1"></i>
+                    <strong>Nota de Seguridad:</strong> Por políticas de seguridad de la demo pública y restricciones HTTPS del navegador, la vinculación directa de archivos locales está deshabilitada en esta demo para evitar advertencias de seguridad de acceso al disco local.
+                </div>
+                <p class="mb-0">Para probar la importación en esta demo, puedes usar el botón superior <strong>"Subir PDF/XML"</strong> o subir archivos directamente al buzón.</p>
+            </div>
+            <div class="modal-footer bg-light border-top-0">
+                <button type="button" class="btn btn-secondary w-100 fw-bold" data-bs-dismiss="modal">Entendido</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Sincronizador de Carpeta Local (File System Access API) -->
 <div class="card shadow-sm border-0 mb-4 overflow-hidden" id="sincronizador-local-card">
     <div class="card-body p-4">
@@ -664,7 +690,13 @@
             updateUIStatus('compat');
 
             if (btnEscanearCompat && inputCompat) {
-                btnEscanearCompat.addEventListener('click', () => {
+                btnEscanearCompat.addEventListener('click', (e) => {
+                    if ("{{ MODO_DEMO }}" === "True") {
+                        e.preventDefault();
+                        const demoModal = new bootstrap.Modal(document.getElementById('modalExplicativoDemoSync'));
+                        demoModal.show();
+                        return;
+                    }
                     inputCompat.click();
                 });
 
@@ -683,7 +715,13 @@
                 }
             }
 
-            btnVincular.addEventListener('click', async () => {
+            btnVincular.addEventListener('click', async (e) => {
+                if ("{{ MODO_DEMO }}" === "True") {
+                    e.preventDefault();
+                    const demoModal = new bootstrap.Modal(document.getElementById('modalExplicativoDemoSync'));
+                    demoModal.show();
+                    return;
+                }
                 try {
                     const handle = await window.showDirectoryPicker();
                     logConsole.innerHTML = '';
