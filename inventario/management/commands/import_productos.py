@@ -43,7 +43,7 @@ class Command(BaseCommand):
         # Limpiar productos si se solicita
         if limpiar:
             Producto.objects.all().delete()
-            self.stdout.write(self.style.SUCCESS('✓ Productos anteriores eliminados'))
+            self.stdout.write(self.style.SUCCESS('[OK] Productos anteriores eliminados'))
 
         try:
             # Cargar workbook
@@ -100,17 +100,17 @@ class Command(BaseCommand):
                     except Exception as e:
                         errores += 1
                         self.stdout.write(
-                            self.style.ERROR(f'✗ Error en fila {row_idx}: {str(e)[:100]}')
+                            self.style.ERROR(f'[ERROR] Error en fila {row_idx}: {str(e)[:100]}')
                         )
 
             # Resumen
             self.stdout.write('\n' + '='*60)
-            self.stdout.write(self.style.SUCCESS(f'✓ IMPORTACIÓN COMPLETADA'))
+            self.stdout.write(self.style.SUCCESS(f'[OK] IMPORTACIÓN COMPLETADA'))
             self.stdout.write(f'  Productos creados:    {productos_creados}')
             self.stdout.write(f'  Productos actualizados: {productos_actualizados}')
             self.stdout.write(f'  Total: {Producto.objects.count()} productos en BD')
             if errores > 0:
-                self.stdout.write(self.style.WARNING(f'  ⚠ Errores: {errores}'))
+                self.stdout.write(self.style.WARNING(f'  [WARNING] Errores: {errores}'))
             self.stdout.write('='*60 + '\n')
 
         except Exception as e:

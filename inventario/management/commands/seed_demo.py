@@ -27,6 +27,6 @@ class Command(BaseCommand):
             
             self.stdout.write("Loading demo seed data...")
             call_command('loaddata', 'demo_seed.json')
-            self.stdout.write(self.style.SUCCESS("✓ Demo seed data loaded successfully!"))
+            self.stdout.write(self.style.SUCCESS("Demo seed data loaded successfully!"))
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"Error seeding database: {e}"))
