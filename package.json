@@ -1,0 +1,14 @@
+{
+  "name": "opendte",
+  "version": "1.0.0",
+  "description": "Sistema genérico de DTE y gestión de inventario",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "localforage": "^1.10.0"
+  },
+  "author": "",
+  "license": "MIT"
+}

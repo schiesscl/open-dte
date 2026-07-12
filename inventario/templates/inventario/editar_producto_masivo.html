@@ -1,0 +1,223 @@
+{% extends 'inventario/base.html' %}
+
+{% block title %}Editar Selección de Productos - OpenDTE{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="text-fs-grey fw-bold">
+                <i class="bi bi-pencil-square text-fs-yellow"></i> Edición Masiva de Productos
+            </h2>
+            <a href="{% url 'lista_productos' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+
+        <!-- Alerta informativa de productos seleccionados -->
+        <div class="alert alert-info border shadow-sm mb-4">
+            <h5 class="fw-bold mb-2"><i class="bi bi-info-circle-fill"></i> Productos Seleccionados ({{ productos|length }})</h5>
+            <div style="max-height: 120px; overflow-y: auto; padding: 5px;">
+                {% for p in productos %}
+                    <span class="badge bg-secondary p-2 me-1 mb-1 fs-6">
+                        <strong>{{ p.codigo }}</strong> - {{ p.descripcion }}
+                    </span>
+                {% endfor %}
+            </div>
+            <small class="text-muted d-block mt-2">
+                Los campos que tengan valores diferentes en los productos seleccionados estarán bloqueados para evitar sobrescribir datos específicos. Solo podrás editar los campos que tengan valores idénticos.
+            </small>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-4">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="ids" value="{{ ids_raw }}">
+                    
+                    <!-- Fila 1: Descripción -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-fs-grey">Descripción</label>
+                        {% if 'descripcion' in blocked_fields %}
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-lock-fill text-muted"></i></span>
+                                <input type="text" class="form-control bg-light text-muted" value="[Valores diferentes (Bloqueado)]" disabled>
+                            </div>
+                        {% else %}
+                            <input type="text" name="descripcion" class="form-control" value="{{ identical_fields.descripcion|default:'' }}">
+                        {% endif %}
+                    </div>
+
+                    <!-- Fila 2: Código Alternativo (Unidad) -->
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold text-fs-grey">Código Unidad (Alt 1) <span class="badge bg-warning text-dark small">No editable en lote</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-lock-fill text-muted"></i></span>
+                                <input type="text" class="form-control bg-light text-muted" value="[Códigos únicos (Bloqueado)]" disabled>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-fs-grey">Unidades (Mult 1)</label>
+                            {% if 'cant_alternativo' in blocked_fields %}
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="bi bi-lock-fill text-muted"></i></span>
+                                    <input type="text" class="form-control bg-light text-muted text-center" value="-" disabled>
+                                </div>
+                            {% else %}
+                                <input type="number" name="cant_alternativo" class="form-control text-center" min="1" value="{{ identical_fields.cant_alternativo }}">
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Fila 3: Código Caja (Alt 2) -->
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold text-fs-grey">Código Caja (Alt 2) <span class="badge bg-warning text-dark small">No editable en lote</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-lock-fill text-muted"></i></span>
+                                <input type="text" class="form-control bg-light text-muted" value="[Códigos únicos (Bloqueado)]" disabled>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-fs-grey">Unidades (Mult 2)</label>
+                            {% if 'cant_alternativo_2' in blocked_fields %}
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="bi bi-lock-fill text-muted"></i></span>
+                                    <input type="text" class="form-control bg-light text-muted text-center" value="-" disabled>
+                                </div>
+                            {% else %}
+                                <input type="number" name="cant_alternativo_2" class="form-control text-center" min="1" value="{{ identical_fields.cant_alternativo_2 }}">
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Fila 4: Código Alternativo (Alt 3) -->
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold text-fs-grey">Código Alternativo (Alt 3) <span class="badge bg-warning text-dark small">No editable en lote</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-lock-fill text-muted"></i></span>
+                                <input type="text" class="form-control bg-light text-muted" value="[Códigos únicos (Bloqueado)]" disabled>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-fs-grey">Unidades (Mult 3)</label>
+                            {% if 'cant_alternativo_3' in blocked_fields %}
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="bi bi-lock-fill text-muted"></i></span>
+                                    <input type="text" class="form-control bg-light text-muted text-center" value="-" disabled>
+                                </div>
+                            {% else %}
+                                <input type="number" name="cant_alternativo_3" class="form-control text-center" min="1" value="{{ identical_fields.cant_alternativo_3 }}">
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Fila 5: Medida, Stocks y Mínimo -->
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-fs-grey">Unidad Medida</label>
+                            {% if 'unidad_medida' in blocked_fields %}
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="bi bi-lock-fill text-muted"></i></span>
+                                    <input type="text" class="form-control bg-light text-muted" value="-" disabled>
+                                </div>
+                            {% else %}
+                                <input type="text" name="unidad_medida" class="form-control" value="{{ identical_fields.unidad_medida|default:'' }}">
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-fs-grey">Stock Temuco</label>
+                            {% if 'stock_actual' in blocked_fields %}
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="bi bi-lock-fill text-muted"></i></span>
+                                    <input type="text" class="form-control bg-light text-muted" value="-" disabled>
+                                </div>
+                            {% else %}
+                                <input type="number" name="stock_actual" class="form-control" value="{{ identical_fields.stock_actual }}">
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-fs-grey">Real (Contado)</label>
+                            {% if 'stock_real' in blocked_fields %}
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="bi bi-lock-fill text-muted"></i></span>
+                                    <input type="text" class="form-control bg-light text-muted" value="-" disabled>
+                                </div>
+                            {% else %}
+                                <input type="number" name="stock_real" class="form-control" value="{{ identical_fields.stock_real }}">
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-fs-grey">Stock Sistema ERP</label>
+                            {% if 'stock_sistema' in blocked_fields %}
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="bi bi-lock-fill text-muted"></i></span>
+                                    <input type="text" class="form-control bg-light text-muted" value="-" disabled>
+                                </div>
+                            {% else %}
+                                <input type="number" name="stock_sistema" class="form-control" value="{{ identical_fields.stock_sistema }}">
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-fs-grey">Mínimo Reposición</label>
+                            {% if 'stock_minimo' in blocked_fields %}
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="bi bi-lock-fill text-muted"></i></span>
+                                    <input type="text" class="form-control bg-light text-muted" value="-" disabled>
+                                </div>
+                            {% else %}
+                                <input type="number" name="stock_minimo" class="form-control" value="{{ identical_fields.stock_minimo }}">
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Fila 6: Precio y Estado -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-fs-grey">Precio de Venta</label>
+                            {% if 'precio_venta' in blocked_fields %}
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="bi bi-lock-fill text-muted"></i></span>
+                                    <input type="text" class="form-control bg-light text-muted" value="-" disabled>
+                                </div>
+                            {% else %}
+                                <input type="number" step="0.01" name="precio_venta" class="form-control" value="{{ identical_fields.precio_venta }}">
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-fs-grey">Estado</label>
+                            <div class="form-check mt-2">
+                                {% if 'activo' in blocked_fields %}
+                                    <input type="checkbox" class="form-check-input bg-light" disabled>
+                                    <label class="form-check-label text-muted">
+                                        <i class="bi bi-lock-fill"></i> Activo (Valores diferentes - Bloqueado)
+                                    </label>
+                                {% else %}
+                                    <input type="checkbox" name="activo" id="id_activo" class="form-check-input" {% if identical_fields.activo %}checked{% endif %}>
+                                    <label class="form-check-label" for="id_activo">
+                                        Producto Activo
+                                    </label>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botón de Envío -->
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-fs-yellow fw-bold btn-lg">
+                            <i class="bi bi-save"></i> Guardar Cambios en Masa
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+    </div>
+</div>
+{% endblock %}

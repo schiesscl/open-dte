@@ -1,0 +1,301 @@
+{% extends 'inventario/base.html' %}
+
+{% block title %}{% if producto %}Editar{% else %}Crear{% endif %} Producto - OpenDTE{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="text-fs-grey fw-bold"><i class="bi bi-{% if producto %}pencil-square{% else %}plus-circle{% endif %} text-fs-yellow"></i> {% if producto %}Editar{% else %}Crear{% endif %} Producto</h2>
+            <a href="{% url 'lista_productos' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <strong>Errores en el formulario:</strong>
+                        <ul>
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endif %}
+                
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold text-fs-grey">Código del Producto (SKU)</label>
+                            {{ form.codigo }}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold text-fs-grey">Código Unidad (Alt 1)</label>
+                            {{ form.codigo_alternativo }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-fs-grey">Unidades (Mult 1)</label>
+                            {{ form.cant_alternativo }}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold text-fs-grey">Código Caja (Alt 2)</label>
+                            {{ form.codigo_alternativo_2 }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-fs-grey">Unidades (Mult 2)</label>
+                            {{ form.cant_alternativo_2 }}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold text-fs-grey">Código Alternativo (Alt 3)</label>
+                            {{ form.codigo_alternativo_3 }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-fs-grey">Unidades (Mult 3)</label>
+                            {{ form.cant_alternativo_3 }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-fs-grey">Descripción</label>
+                        {{ form.descripcion }}
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-fs-grey">Stock Temuco</label>
+                            {{ form.stock_actual }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-fs-grey">Real (Contado)</label>
+                            {{ form.stock_real }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-fs-grey">Diferencia</label>
+                            <input type="text" class="form-control bg-light" readonly value="{% if producto %}{{ producto.stock_diferencia }}{% else %}0{% endif %}" />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-fs-grey">Stock Sistema ERP</label>
+                            {{ form.stock_sistema }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-fs-grey">Mínimo Reposición</label>
+                            {{ form.stock_minimo }}
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-fs-grey">Precio de Venta</label>
+                            {{ form.precio_venta }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-fs-grey">Estado</label>
+                            <div class="form-check mt-2">
+                                {{ form.activo }}
+                                <label class="form-check-label" for="{{ form.activo.id_for_label }}">
+                                    Producto Activo
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-fs-yellow fw-bold btn-lg">
+                            <i class="bi bi-save"></i> {% if producto %}Guardar Cambios{% else %}Crear Producto{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if producto %}
+        <!-- Card de Historial de Stock -->
+        <div class="card shadow-sm border-0 mt-4">
+            <div class="card-header bg-light border-0 py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-fs-grey fw-bold"><i class="bi bi-clock-history text-fs-yellow"></i> Historial de Cambios de Stock</h5>
+                <span class="badge bg-secondary" id="total-records-badge">{{ producto.historial_stock.all.count }} registros</span>
+            </div>
+            <div class="card-body p-4">
+                {% if producto.historial_stock.exists %}
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-hover align-middle mb-0" id="historial-table">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>Fecha y Hora</th>
+                                    <th>Stock Actual (Sistema)</th>
+                                    <th>Stock Real (Físico)</th>
+                                    <th>Motivo / Origen</th>
+                                    <th>Usuario</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historial-tbody">
+                                {% for registro in producto.historial_stock.all %}
+                                <tr class="historial-row">
+                                    <td class="text-nowrap">{{ registro.fecha|date:"d/m/Y H:i:s" }}</td>
+                                    <td>
+                                        {% if registro.stock_actual_anterior == None %}
+                                            <span class="badge bg-success-subtle text-success">Inicial: {{ registro.stock_actual_nuevo }}</span>
+                                        {% elif registro.stock_actual_anterior != registro.stock_actual_nuevo %}
+                                            <span class="text-muted">{{ registro.stock_actual_anterior }}</span>
+                                            <i class="bi bi-arrow-right text-muted mx-1"></i>
+                                            <strong class="text-dark">{{ registro.stock_actual_nuevo }}</strong>
+                                            {% if registro.stock_actual_nuevo > registro.stock_actual_anterior %}
+                                                <span class="badge bg-success-subtle text-success ms-1"><i class="bi bi-caret-up-fill"></i> Alza</span>
+                                            {% else %}
+                                                <span class="badge bg-danger-subtle text-danger ms-1"><i class="bi bi-caret-down-fill"></i> Baja</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">{{ registro.stock_actual_nuevo }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if registro.stock_real_anterior == None %}
+                                            <span class="badge bg-success-subtle text-success">Inicial: {{ registro.stock_real_nuevo }}</span>
+                                        {% elif registro.stock_real_anterior != registro.stock_real_nuevo %}
+                                            <span class="text-muted">{{ registro.stock_real_anterior }}</span>
+                                            <i class="bi bi-arrow-right text-muted mx-1"></i>
+                                            <strong class="text-dark">{{ registro.stock_real_nuevo }}</strong>
+                                            {% if registro.stock_real_nuevo > registro.stock_real_anterior %}
+                                                <span class="badge bg-success-subtle text-success ms-1"><i class="bi bi-caret-up-fill"></i> Alza</span>
+                                            {% else %}
+                                                <span class="badge bg-danger-subtle text-danger ms-1"><i class="bi bi-caret-down-fill"></i> Baja</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">{{ registro.stock_real_nuevo }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="text-wrap">{{ registro.detalle|default:"-" }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark fw-normal"><i class="bi bi-person"></i> {{ registro.usuario.username|default:"Sistema" }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Paginación local interactiva -->
+                    <div class="d-flex justify-content-between align-items-center mt-3" id="historial-pagination-container">
+                        <div class="text-muted small" id="pagination-info">
+                            Mostrando registros 1-30 de 30
+                        </div>
+                        <nav aria-label="Navegación del historial">
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item" id="btn-prev-page">
+                                    <a class="page-link" href="#" aria-label="Anterior">
+                                        <span aria-hidden="true">&laquo; Anterior</span>
+                                    </a>
+                                </li>
+                                <li class="page-item" id="btn-next-page">
+                                    <a class="page-link" href="#" aria-label="Siguiente">
+                                        <span aria-hidden="true">Siguiente &raquo;</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-info-circle fs-4 d-block mb-2"></i>
+                        No hay registros de historial de stock para este producto.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const rows = document.querySelectorAll('.historial-row');
+                const rowsPerPage = 30;
+                let currentPage = 1;
+                
+                if (rows.length <= rowsPerPage) {
+                    const paginationContainer = document.getElementById('historial-pagination-container');
+                    if (paginationContainer) {
+                        paginationContainer.style.display = 'none';
+                    }
+                    return;
+                }
+                
+                function renderPage(page) {
+                    const start = (page - 1) * rowsPerPage;
+                    const end = page * rowsPerPage;
+                    
+                    rows.forEach((row, index) => {
+                        if (index >= start && index < end) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                    
+                    const totalPages = Math.ceil(rows.length / rowsPerPage);
+                    const btnPrev = document.getElementById('btn-prev-page');
+                    const btnNext = document.getElementById('btn-next-page');
+                    
+                    if (page === 1) {
+                        btnPrev.classList.add('disabled');
+                    } else {
+                        btnPrev.classList.remove('disabled');
+                    }
+                    
+                    if (page === totalPages || totalPages === 0) {
+                        btnNext.classList.add('disabled');
+                    } else {
+                        btnNext.classList.remove('disabled');
+                    }
+                    
+                    const infoEl = document.getElementById('pagination-info');
+                    if (infoEl) {
+                        const currentEnd = Math.min(end, rows.length);
+                        const currentStart = rows.length === 0 ? 0 : start + 1;
+                        infoEl.textContent = `Mostrando registros ${currentStart}-${currentEnd} de ${rows.length}`;
+                    }
+                }
+                
+                document.getElementById('btn-prev-page').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (currentPage > 1) {
+                        currentPage--;
+                        renderPage(currentPage);
+                    }
+                });
+                
+                document.getElementById('btn-next-page').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const totalPages = Math.ceil(rows.length / rowsPerPage);
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        renderPage(currentPage);
+                    }
+                });
+                
+                // Renderizado inicial
+                renderPage(currentPage);
+            });
+        </script>
+        {% endif %}
+        
+    </div>
+</div>
+{% endblock %}

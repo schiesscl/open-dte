@@ -1,0 +1,624 @@
+/* static/css/style.css */
+:root {
+    --fs-yellow: #F9EA15;
+    --fs-grey: #696C71;
+    --fs-black: #000000;
+    --fs-white: #FFFFFF;
+
+    /* Theme CSS Variables - Light Theme (Default) */
+    --app-bg: #f4f6f9;
+    --text-color: #212529;
+    --card-bg: #ffffff;
+    
+    --sidebar-bg: #ffffff;
+    --sidebar-border: #e0e0e0;
+    --sidebar-text: #495057;
+    --sidebar-text-hover: #111215;
+    --sidebar-hover-bg: rgba(0, 0, 0, 0.05);
+    
+    --sidebar-switch-bg: #f8f9fa;
+    --sidebar-switch-border: #dee2e6;
+    --sidebar-switch-text: #495057;
+    
+    --mobile-header-bg: var(--fs-white);
+    --mobile-header-border: var(--fs-yellow);
+    
+    --logo-bg: transparent;
+    --logo-radius: 0;
+    --logo-shadow: 0 0 0 0 transparent;
+
+    /* Fluent UI Additions */
+    --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.05);
+    --input-bg: #ffffff;
+    --input-bg-focus: #ffffff;
+    --input-border: #d1d1d1;
+    --input-disabled-bg: #f3f3f3;
+    --bg-light-fluent: #f8f9fa;
+}
+
+[data-bs-theme="dark"] {
+    /* Theme CSS Variables - Dark Theme */
+    --app-bg: #121316;
+    --text-color: #f4f6f9;
+    --card-bg: #1e2025;
+    
+    --sidebar-bg: #111215;
+    --sidebar-border: #202226;
+    --sidebar-text: #a0a5b0;
+    --sidebar-text-hover: var(--fs-yellow);
+    --sidebar-hover-bg: rgba(249, 234, 21, 0.08);
+    
+    --sidebar-switch-bg: rgba(255, 255, 255, 0.05);
+    --sidebar-switch-border: rgba(255, 255, 255, 0.1);
+    --sidebar-switch-text: #a0a5b0;
+    
+    --mobile-header-bg: #111215;
+    --mobile-header-border: var(--fs-yellow);
+    
+    --logo-bg: #ffffff;
+    --logo-radius: 4px;
+    --logo-shadow: 0 0 0 5px #ffffff;
+
+    /* Fluent UI Additions */
+    --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.2);
+    --input-bg: rgba(255, 255, 255, 0.05);
+    --input-bg-focus: rgba(255, 255, 255, 0.03);
+    --input-border: rgba(255, 255, 255, 0.15);
+    --input-disabled-bg: rgba(255, 255, 255, 0.02);
+    --bg-light-fluent: #181a1f;
+}
+
+body {
+    background-color: var(--app-bg);
+    color: var(--text-color);
+    font-family: "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Clases personalizadas OpenDTE */
+.bg-fs-black { background-color: var(--fs-black); }
+.text-fs-yellow { color: var(--fs-yellow); }
+.text-fs-grey { color: var(--fs-grey); }
+
+/* Botones personalizados (Microsoft 365 Style) */
+.btn {
+    border-radius: 4px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    font-size: 0.8rem !important;
+    letter-spacing: 0.5px;
+    transition: all 0.15s ease-in-out;
+}
+.btn-fs-yellow {
+    background-color: var(--fs-yellow);
+    color: var(--fs-black);
+    border: 1px solid rgba(0, 0, 0, 0.15) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.btn-fs-yellow:hover {
+    background-color: #e3d513;
+    color: var(--fs-black);
+    border-color: rgba(0, 0, 0, 0.25) !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+.btn-outline-secondary {
+    border-color: var(--sidebar-border) !important;
+    color: var(--text-color) !important;
+}
+.btn-outline-secondary:hover {
+    background-color: var(--sidebar-hover-bg) !important;
+    color: var(--text-color) !important;
+    border-color: var(--sidebar-border) !important;
+}
+
+/* Estilo para el Navbar (Barra superior - depreciado pero se mantiene para legacy) */
+.navbar-custom {
+    background-color: var(--fs-white);
+    border-bottom: 4px solid var(--fs-yellow);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+/* Tipografía del logo en texto por si falla la imagen */
+.brand-text {
+    font-weight: 800;
+    font-size: 1.5rem;
+    letter-spacing: -0.5px;
+}
+.brand-full { color: var(--text-color); }
+.brand-sello { color: var(--fs-grey); }
+
+/* Logo styling in dark mode */
+img[alt="Logo OpenDTE"] {
+    background-color: var(--logo-bg);
+    border-radius: var(--logo-radius);
+    box-shadow: var(--logo-shadow);
+    transition: background-color 0.3s ease, border-radius 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* --- NUEVO LAYOUT SIDEBAR VERTICAL & RESPONSIVO --- */
+
+/* Contenedor General */
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar en Escritorio */
+.sidebar {
+    width: 280px;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    background-color: var(--sidebar-bg);
+    border-right: 2px solid var(--sidebar-border);
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Sidebar Header (Logo - Fijo) */
+.sidebar-header {
+    flex-shrink: 0;
+    padding: 1.5rem 1rem;
+    border-bottom: 1px solid var(--sidebar-border);
+}
+
+/* Sidebar Navigation (Scrolleable) */
+.sidebar-nav-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    /* Estilos de scrollbar personalizado */
+}
+
+.sidebar-nav-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-nav-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar-nav-scroll::-webkit-scrollbar-thumb {
+    background: var(--sidebar-border);
+    border-radius: 3px;
+}
+
+.sidebar-nav-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--sidebar-text);
+}
+
+/* Sidebar Footer (Botones - Fijo) */
+.sidebar-footer {
+    flex-shrink: 0;
+    padding: 1.5rem 1rem;
+    border-top: 1px solid var(--sidebar-border);
+    background-color: var(--sidebar-bg);
+}
+
+/* Contenido Principal */
+.main-content {
+    flex-grow: 1;
+    margin-left: 280px;
+    padding: 2rem;
+    background-color: var(--app-bg);
+    min-height: 100vh;
+    transition: margin-left 0.3s ease, background-color 0.3s ease;
+}
+
+/* Links de Navegación del Sidebar */
+.sidebar-nav {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.sidebar-nav .nav-item {
+    margin-bottom: 0.4rem;
+}
+
+.sidebar-nav .nav-link {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1.1rem;
+    color: var(--sidebar-text);
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.sidebar-nav .nav-link i {
+    font-size: 1.2rem;
+    margin-right: 0.8rem;
+    transition: transform 0.2s ease;
+}
+
+.sidebar-nav .nav-link:hover {
+    color: var(--sidebar-text-hover);
+    background-color: var(--sidebar-hover-bg);
+}
+
+.sidebar-nav .nav-link:hover i {
+    transform: translateX(3px);
+}
+
+.sidebar-nav .nav-link.active {
+    color: var(--fs-black);
+    background-color: var(--fs-yellow);
+}
+
+.sidebar-nav .nav-link.active i {
+    color: var(--fs-black);
+}
+
+.sidebar-nav .nav-link.active .badge-pending {
+    background-color: var(--fs-black) !important;
+    color: var(--fs-yellow) !important;
+}
+
+/* Badge de Carga Compartida */
+.badge-pending {
+    background-color: var(--fs-yellow);
+    color: var(--fs-black);
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 0.25em 0.6em;
+    border-radius: 50rem;
+    margin-left: auto;
+}
+
+/* Custom cards styling to support light/dark backgrounds (Fluent UI) */
+.card {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--sidebar-border) !important;
+    border-radius: 8px !important;
+    box-shadow: var(--card-shadow) !important;
+    color: var(--text-color) !important;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-header {
+    background-color: transparent !important;
+    border-bottom: 1px solid var(--sidebar-border) !important;
+}
+
+/* Card switch inside sidebars */
+.sidebar-switch-card {
+    background-color: var(--sidebar-switch-bg);
+    border: 1px solid var(--sidebar-switch-border) !important;
+    color: var(--sidebar-switch-text);
+    transition: all 0.3s ease;
+}
+
+/* Header Móvil (oculto en escritorio) */
+.mobile-header {
+    height: 65px;
+    background-color: var(--mobile-header-bg);
+    border-bottom: 3px solid var(--mobile-header-border);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 999;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.mobile-nav-toggle {
+    background: transparent;
+    border: 1px solid var(--sidebar-border);
+    color: var(--text-color);
+    transition: all 0.2s ease;
+}
+.mobile-nav-toggle:hover, .mobile-nav-toggle:focus {
+    background-color: var(--sidebar-hover-bg);
+    color: var(--sidebar-text-hover);
+    border-color: var(--sidebar-border);
+}
+
+/* Offcanvas Móvil */
+.offcanvas-sidebar {
+    background-color: var(--sidebar-bg) !important;
+    border-right: 2px solid var(--sidebar-border) !important;
+    width: 280px !important;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.offcanvas-sidebar .offcanvas-header,
+.offcanvas-sidebar .offcanvas-body {
+    background-color: var(--sidebar-bg) !important;
+    color: var(--text-color);
+}
+
+.offcanvas-sidebar .offcanvas-header {
+    border-bottom: 1px solid var(--sidebar-border);
+}
+
+/* Ajustes de responsividad */
+@media (max-width: 991.98px) {
+    .main-content {
+        margin-left: 0;
+        padding-top: 5.5rem; /* Margen para evitar el header fijo */
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+/* --- ESTILOS DE TABLAS EXCEL MICROSOFT 365 / FLUENT GRID --- */
+.table {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    width: 100%;
+    margin-bottom: 0;
+    color: var(--text-color) !important;
+    border: 1px solid var(--sidebar-border) !important;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.table th, 
+.table td {
+    padding: 10px 14px !important;
+    border-left: 1px solid var(--sidebar-border) !important;
+    border-bottom: 1px solid var(--sidebar-border) !important;
+    vertical-align: middle;
+}
+
+.table th:first-child,
+.table td:first-child {
+    border-left: none !important;
+}
+
+.table tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
+.table-responsive {
+    max-height: calc(100vh - 280px);
+    overflow-y: auto;
+}
+
+.table thead th {
+    font-weight: 700 !important;
+    color: var(--text-color) !important;
+    background-color: var(--bg-light-fluent) !important;
+    border-bottom: 2px solid var(--sidebar-border) !important;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Hover de filas estilo selección de Excel M365 */
+.table-hover tbody tr {
+    transition: background-color 0.1s ease-in-out;
+}
+
+.table-hover tbody tr:hover {
+    background-color: var(--sidebar-hover-bg) !important;
+}
+
+.table tbody tr {
+    background-color: transparent !important;
+}
+
+/* --- ESTILOS DE CAMPOS DE ENTRADA (INPUTS) ESTILO M365 --- */
+.form-control,
+.form-select {
+    background-color: var(--input-bg) !important;
+    border: 1px solid var(--input-border) !important;
+    color: var(--text-color) !important;
+    border-radius: 4px !important; /* Más estructurado y compacto */
+    padding: 0.55rem 0.85rem;
+    font-size: 0.925rem;
+    box-shadow: none !important;
+    transition: border-color 0.1s ease-in-out, background-color 0.1s ease-in-out;
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: var(--input-bg-focus) !important;
+    border: 2px solid var(--fs-yellow) !important; /* Celda activa estilo Excel */
+    outline: none !important;
+    padding: calc(0.55rem - 1px) calc(0.85rem - 1px) !important; /* Evita saltos de texto por el grosor de 2px */
+}
+
+/* Deshabilitados y de sólo lectura */
+.form-control:disabled,
+.form-control[readonly],
+.form-control:disabled.bg-white,
+.form-control[readonly].bg-white,
+.form-select:disabled {
+    background-color: var(--input-disabled-bg) !important;
+    color: var(--fs-grey) !important;
+    border-color: var(--sidebar-border) !important;
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+/* --- ETIQUETAS DE FORMULARIO ESTILO EXCEL/VB6 --- */
+.form-label,
+label {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px;
+    color: var(--fs-grey) !important;
+    display: inline-block;
+    margin-bottom: 0.4rem;
+}
+
+[data-bs-theme="dark"] .form-label,
+[data-bs-theme="dark"] label {
+    color: #a0a5b0 !important;
+}
+
+/* Ajustes de fondo dinámico para .bg-light */
+.bg-light {
+    background-color: var(--bg-light-fluent) !important;
+}
+
+/* --- ESTILOS DESPACHO: VERDE LIMA FUERTE PARA FILAS COMPLETADAS --- */
+tbody tr.table-success-lime {
+    background-color: #32CD32 !important;
+}
+
+tbody tr.table-success-lime td {
+    background-color: #32CD32 !important;
+    box-shadow: none !important;
+    color: #1a1a1a !important;
+}
+
+tbody tr.table-success-lime strong,
+tbody tr.table-success-lime .fw-bold {
+    color: #0a0a0a !important;
+}
+
+/* Icono en color oscuro sobre fondo verde lima */
+tbody tr.table-success-lime .icon-lime-dark {
+    color: #0a0a0a !important;
+}
+
+/* --- ESTILOS DESPACHO: AMARILLO FULL-SELLO PARA FILAS PARCIALMENTE COMPLETADAS --- */
+tbody tr.table-warning-fs {
+    background-color: #F9EA15 !important;
+}
+
+tbody tr.table-warning-fs td {
+    background-color: #F9EA15 !important;
+    box-shadow: none !important;
+    color: #1a1a1a !important;
+}
+
+tbody tr.table-warning-fs strong,
+tbody tr.table-warning-fs .fw-bold {
+    color: #0a0a0a !important;
+}
+
+/* --- DISEÑO EXCLUSIVO PARA LA PÁGINA DE DESPACHO EN ESCRITORIO (SIDEBAR HOVER OVERLAY) --- */
+@media (min-width: 992px) {
+    .layout-despacho .sidebar {
+        transform: translateX(-280px);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+        box-shadow: none;
+    }
+    
+    /* Trigger invisible para el hover del sidebar */
+    .layout-despacho .sidebar::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: -15px; /* ancho de zona sensible al hover */
+        width: 15px;
+        height: 100%;
+        background: transparent;
+        pointer-events: auto;
+        z-index: 1001;
+    }
+    
+    .layout-despacho .sidebar:hover {
+        transform: translateX(0);
+        box-shadow: 5px 0 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .layout-despacho .main-content {
+        margin-left: 0;
+    }
+}
+
+/* --- ESTILOS ADICIONALES PARA GUÍAS DE ABASTECIMIENTO --- */
+.bg-light-fluent {
+    background-color: var(--bg-light-fluent) !important;
+}
+
+.border-dashed {
+    border-style: dashed !important;
+}
+
+#guia-paso-1:hover {
+    background-color: var(--sidebar-hover-bg) !important;
+    border-color: var(--fs-yellow) !important;
+}
+
+.product-results-dropdown {
+    background-color: var(--card-bg) !important;
+    border-color: var(--sidebar-border) !important;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1050;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.product-results-dropdown .dropdown-item {
+    color: var(--text-color) !important;
+    border-bottom: 1px solid var(--sidebar-border) !important;
+    transition: background-color 0.15s;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.product-results-dropdown .dropdown-item:last-child {
+    border-bottom: none !important;
+}
+
+.product-results-dropdown .dropdown-item:hover {
+    background-color: var(--sidebar-hover-bg) !important;
+    color: var(--sidebar-text-hover) !important;
+}
+
+.style-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.style-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.style-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--sidebar-border);
+    border-radius: 3px;
+}
+
+.style-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--fs-grey);
+}
+
+/* --- TABS PERSONALIZADAS --- */
+.nav-tabs {
+    border-bottom: 1px solid var(--sidebar-border) !important;
+}
+
+.nav-tabs .nav-link {
+    background: none !important;
+    border: none !important;
+    border-bottom: 3px solid transparent !important;
+    color: var(--text-color) !important;
+    opacity: 0.7;
+    transition: opacity 0.25s, border-color 0.25s;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+    text-transform: none;
+}
+
+.nav-tabs .nav-link:hover {
+    opacity: 1;
+    border-bottom-color: var(--sidebar-border) !important;
+}
+
+.nav-tabs .nav-link.active {
+    opacity: 1 !important;
+    border-bottom-color: var(--fs-yellow) !important;
+    color: var(--text-color) !important;
+    font-weight: 700 !important;
+}

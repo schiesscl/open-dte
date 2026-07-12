@@ -1,0 +1,177 @@
+{% extends 'inventario/base.html' %}
+{% load custom_filters %}
+
+{% block title %}Facturas de {{ cliente.razon_social }} - OpenDTE{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="text-fs-grey fw-bold mb-2">
+        <i class="bi bi-receipt text-fs-yellow"></i> Facturas de {{
+        cliente.razon_social }}
+        </h2>
+        <p class="text-muted mb-0">
+        <strong>RUT:</strong> {{ cliente.rut }} | <strong>Comuna:</strong> {{
+        cliente.comuna }}
+        </p>
+    </div>
+    <a
+        href="{% url 'lista_clientes' %}"
+        class="btn btn-outline-secondary shadow-sm"
+    >
+        <i class="bi bi-arrow-left"></i> Volver
+    </a>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        {% if facturas %}
+        <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="bg-fs-black text-white">
+            <tr>
+                <th class="text-fs-yellow">Nº Factura</th>
+                <th>Fecha Emisión</th>
+                <th class="text-end">Total</th>
+                <th class="text-center">Acciones</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for f in facturas %}
+            <tr>
+                <td><strong>{{ f.numero }}</strong></td>
+                <td>{{ f.fecha_emision|date:"d/m/Y" }}</td>
+                <td class="text-end text-success fw-bold">${{ f.total|price_format }}</td>
+                <td class="text-center">
+                <button
+                    class="btn btn-sm btn-outline-primary"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalVerFact{{ f.id }}"
+                    title="Ver detalles"
+                >
+                    <i class="bi bi-eye"></i>
+                </button>
+                <a
+                    href="{% url 'editar_factura' f.id %}"
+                    class="btn btn-sm btn-outline-secondary"
+                    title="Editar"
+                >
+                    <i class="bi bi-pencil"></i>
+                </a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+
+        {% if facturas %}
+        {% for f in facturas %}
+        <!-- MODAL VER DETALLES -->
+        <div
+            class="modal fade"
+            id="modalVerFact{{ f.id }}"
+            tabindex="-1"
+            aria-hidden="true"
+        >
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-receipt"></i> Factura Nº {{ f.numero }}
+                </h5>
+                <button
+                    type="button"
+                    class="btn-close btn-close-white"
+                    data-bs-dismiss="modal"
+                ></button>
+                </div>
+                <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                    <p>
+                        <strong>Cliente:</strong> {{ f.cliente.razon_social }}
+                    </p>
+                    <p><strong>RUT:</strong> {{ f.cliente.rut }}</p>
+                    </div>
+                    <div class="col-md-6">
+                    <p>
+                        <strong>Fecha Emisión:</strong> {{
+                        f.fecha_emision|date:"d/m/Y" }}
+                    </p>
+                    <p>
+                        <strong>Fecha Ingreso:</strong> {{
+                        f.fecha_subida|date:"d/m/Y H:i" }}
+                    </p>
+                    </div>
+                </div>
+                <hr />
+                <h6 class="mb-3"><strong>Detalles de Productos</strong></h6>
+                {% if f.detalles.all %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                    <thead class="table-light">
+                        <tr>
+                        <th>Código</th>
+                        <th>Producto</th>
+                        <th class="text-end">Cantidad</th>
+                        <th class="text-end">P. Unit.</th>
+                        <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in f.detalles.all %}
+                        <tr>
+                        <td><strong>{{ d.producto.codigo }}</strong></td>
+                        <td>{{ d.producto.descripcion }}</td>
+                        <td class="text-end">{{ d.cantidad }}</td>
+                        <td class="text-end">${{ d.precio_unitario|price_format }}</td>
+                        <td class="text-end">
+                            <strong>${{ d.total_linea|price_format }}</strong>
+                        </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">
+                    Sin detalles de productos.
+                </p>
+                {% endif %}
+                <hr />
+                <div class="row text-end fw-bold">
+                    <div class="col-6">Neto:</div>
+                    <div class="col-6">${{ f.neto|price_format }}</div>
+                </div>
+                <div class="row text-end fw-bold">
+                    <div class="col-6">IVA (19%):</div>
+                    <div class="col-6">${{ f.iva|price_format }}</div>
+                </div>
+                <div class="row text-end fw-bold text-primary">
+                    <div class="col-6">Total:</div>
+                    <div class="col-6 fs-5">${{ f.total|price_format }}</div>
+                </div>
+                </div>
+                <div class="modal-footer">
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal"
+                >
+                    Cerrar
+                </button>
+                </div>
+            </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% else %}
+        <p class="text-center text-muted py-5">
+        Este cliente no tiene facturas registradas.
+        </p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

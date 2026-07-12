@@ -1,0 +1,108 @@
+{% extends 'inventario/base.html' %}
+
+{% block title %}Historial de Despachos - OpenDTE{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-fs-grey fw-bold">
+        <i class="bi bi-clock-history text-fs-yellow"></i> Historial de Despachos
+    </h2>
+    <a href="{% url 'despacho' %}" class="btn btn-fs-yellow fw-bold shadow-sm">
+        <i class="bi bi-upc-scan"></i> Nuevo Despacho
+    </a>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-fs-black text-white px-4">
+        <h5 class="mb-0 text-fs-yellow"><i class="bi bi-list-check"></i> Despachos Realizados</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Fecha y Hora</th>
+                        <th>Factura</th>
+                        <th>Cliente</th>
+                        <th class="text-center pe-4">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for despacho in despachos %}
+                    <tr>
+                        <td class="ps-4">
+                            <strong>{{ despacho.fecha_despacho|date:"d/m/Y" }}</strong><br>
+                            <small class="text-muted">{{ despacho.fecha_despacho|time:"H:i" }} hrs</small>
+                        </td>
+                        <td>
+                            <strong class="text-primary">#{{ despacho.factura.numero }}</strong><br>
+                            <span class="badge bg-success"><i class="bi bi-check-circle-fill"></i> Despachado</span>
+                        </td>
+                        <td>
+                            {{ despacho.factura.cliente.razon_social }}<br>
+                            <small class="text-muted">RUT: {{ despacho.factura.cliente.rut }}</small>
+                        </td>
+                        <td class="text-center pe-4">
+                            <button class="btn btn-outline-secondary btn-sm ver-factura" 
+                                    data-url="{% url 'ver_factura' despacho.factura.id %}"
+                                    title="Ver detalle del despacho">
+                                <i class="bi bi-eye"></i> Detalle
+                            </button>
+                            <a href="{% url 'ver_guia_despacho' despacho.id %}" target="_blank" class="btn btn-outline-primary btn-sm ms-1" title="Ver e Imprimir Guía de Despacho">
+                                <i class="bi bi-file-earmark-pdf"></i> Guía
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <i class="bi bi-truck fs-1 d-block mb-3"></i>
+                            Aún no se ha realizado ningún despacho exitoso en la plataforma.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Contenedor del Modal de Factura -->
+<div id="modal-container"></div>
+
+<!-- Lógica para abrir modal -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const btnsVerFactura = document.querySelectorAll('.ver-factura');
+    const container = document.getElementById('modal-container');
+    
+    btnsVerFactura.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const url = btn.getAttribute('data-url');
+            
+            // Hacemos una petición fetch para traer el HTML del modal
+            fetch(url)
+                .then(response => response.text())
+                .then(html => {
+                    // Inyectamos el HTML en el contenedor
+                    container.innerHTML = html;
+                    
+                    // Inicializamos y mostramos el modal de Bootstrap
+                    const modalEl = container.querySelector('.modal');
+                    const modalObj = new bootstrap.Modal(modalEl);
+                    modalObj.show();
+                    
+                    // Limpiamos el DOM una vez se cierre el modal para no saturar memoria
+                    modalEl.addEventListener('hidden.bs.modal', () => {
+                        container.innerHTML = '';
+                    });
+                })
+                .catch(error => {
+                    console.error('Error al cargar la factura:', error);
+                    alert("Ocurrió un error al cargar los detalles.");
+                });
+        });
+    });
+});
+</script>
+{% endblock %}

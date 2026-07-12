@@ -1,0 +1,521 @@
+{% extends 'inventario/base.html' %}
+{% load custom_filters %}
+
+{% block title %}Preparar Despacho - OpenDTE{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-fs-grey fw-bold">
+        <i class="bi bi-truck text-fs-yellow"></i> Preparar Despacho
+    </h2>
+</div>
+
+{% if multiple_matches %}
+<div class="card mb-4 border-warning shadow-sm">
+    <div class="card-header bg-warning bg-opacity-10 py-3">
+        <h5 class="mb-0 fw-bold text-dark">
+            <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i> 
+            Múltiples Documentos Pendientes Encontrados (Folio #{{ buscar }})
+        </h5>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-4">
+            Se detectó más de un documento pendiente con el número de folio especificado. Por favor, selecciona cuál deseas procesar para el escaneo de stock:
+        </p>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tipo de Documento</th>
+                        <th>Nº Folio</th>
+                        <th>Cliente</th>
+                        <th>Fecha Emisión</th>
+                        <th class="text-end">Total</th>
+                        <th class="text-center">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in matches %}
+                    <tr>
+                        <td>
+                            {% if m.tipo_documento == 'NOTA DE CREDITO' %}
+                                <span class="badge bg-danger"><i class="bi bi-file-earmark-minus"></i> Nota de Crédito</span>
+                            {% else %}
+                                <span class="badge bg-primary"><i class="bi bi-receipt"></i> Factura</span>
+                            {% endif %}
+                        </td>
+                        <td><strong>#{{ m.numero }}</strong></td>
+                        <td>{{ m.cliente.razon_social|default:'Desconocido' }}</td>
+                        <td>{{ m.fecha_emision|date:"d/m/Y" }}</td>
+                        <td class="text-end fw-bold">
+                            {% if m.tipo_documento == 'NOTA DE CREDITO' %}
+                                <span class="text-danger">-${{ m.total|price_format }}</span>
+                            {% else %}
+                                <span class="text-success">${{ m.total|price_format }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <a href="?buscar={{ buscar }}&tipo={{ m.tipo_documento }}" class="btn btn-sm btn-fs-yellow fw-bold">
+                                <i class="bi bi-box-seam"></i> Seleccionar para Escaneo
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+
+<div class="card mb-3">
+    <div class="card-header">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-file-earmark-check text-fs-yellow"></i> Datos del Documento</h5>
+    </div>
+    <div class="card-body">
+        <!-- PRIMERA FILA: DATOS LECTURA / BÚSQUEDA -->
+        <div class="row align-items-end mb-3">
+            <!-- RAZÓN SOCIAL -->
+            <div class="col-md-5 mb-2 mb-md-0">
+                <label class="form-label fw-bold text-muted small mb-0">RAZON SOCIAL</label>
+                <input type="text" class="form-control form-control-lg fs-4 fw-bold" value="{% if factura %}{{ factura.cliente.razon_social }}{% endif %}" disabled>
+            </div>
+            
+            <!-- RUT -->
+            <div class="col-md-2 mb-2 mb-md-0">
+                <label class="form-label fw-bold text-muted small mb-0">RUT</label>
+                <input type="text" class="form-control form-control-lg fs-4" value="{% if factura %}{{ factura.cliente.rut }}{% endif %}" disabled>
+            </div>
+
+            <!-- FECHA EMISIÓN -->
+            <div class="col-md-2 mb-2 mb-md-0">
+                <label class="form-label fw-bold text-muted small mb-0">FECHA EMISIÓN</label>
+                <input type="text" class="form-control form-control-lg fs-4" value="{% if factura %}{{ factura.fecha_emision|date:'d/m/Y' }}{% endif %}" disabled>
+            </div>
+            
+            <!-- Nº FACTURA (BUSCADOR INTEGRADO) -->
+            <div class="col-md-3 mb-2 mb-md-0">
+                <form method="GET" action="{% url 'despacho' %}" id="form-buscar-factura">
+                    <label for="buscar" class="form-label fw-bold text-muted small mb-0">Nº FACTURA</label>
+                    <div class="input-group">
+                        <span class="input-group-text fs-4 fw-bold text-primary">#</span>
+                        <input type="text" class="form-control form-control-lg fs-4 fw-bold text-primary" id="buscar" name="buscar" 
+                               value="{% if factura %}{{ factura.numero }}{% else %}{{ buscar }}{% endif %}" placeholder="Ej: 12345" autofocus>
+                        <button class="btn btn-fs-yellow" type="submit">
+                            <i class="bi bi-search fs-4"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+            <!-- SEGUNDA FILA: CONTROL DE ESCANEO -->
+            <div class="row align-items-end">
+                <!-- CÓDIGO DE PRODUCTO -->
+                <div class="col-md-4 mb-2 mb-md-0">
+                    <label for="input-escaner" class="form-label fw-bold text-muted small mb-0">CODIGO DE PRODUCTO</label>
+                    <div class="input-group">
+                        <span class="input-group-text fs-4 fw-bold text-primary">#</span>
+                        <input type="text" id="input-escaner" class="form-control form-control-lg fs-4 fw-bold text-primary" 
+                               placeholder="" autocomplete="off" {% if not factura %}disabled{% endif %}>
+                        <button class="btn btn-fs-yellow" type="button" id="btn-buscar-producto" {% if not factura %}disabled{% endif %}>
+                            <i class="bi bi-search fs-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- DESCRIPCIÓN PRODUCTO -->
+                <div class="col-md-5 mb-2 mb-md-0">
+                    <label class="form-label fw-bold text-muted small mb-0">DESCRIPCION PRODUCTO</label>
+                    <input type="text" id="producto-descripcion" class="form-control form-control-lg fs-4" value="" disabled>
+                </div>
+
+                <!-- CANTIDAD -->
+                <div class="col-md-2 mb-2 mb-md-0">
+                    <label for="scan-cantidad" class="form-label fw-bold text-muted small mb-0">CANTIDAD</label>
+                    <div class="input-group">
+                        <input type="text" id="scan-cantidad" class="form-control form-control-lg fs-4 text-center" 
+                               value="1" {% if not factura %}disabled{% endif %}>
+                        <button class="btn btn-fs-yellow" type="button" id="btn-agregar-manual" title="Agregar cantidad" {% if not factura %}disabled{% endif %}>
+                            <i class="bi bi-arrow-right-short fs-4 fw-bold"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- UNIDAD -->
+                <div class="col-md-1 mb-2 mb-md-0">
+                    <label class="form-label fw-bold text-muted small mb-0">UNIDAD</label>
+                    <input type="text" id="scan-unidad" class="form-control form-control-lg fs-4 text-center" value="" disabled>
+                </div>
+            </div>
+    </div>
+</div>
+
+{% if not factura or factura.estado_despacho != 'DESPACHADO' %}
+<div class="card">
+    <div class="card-header px-4">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-box-seam text-fs-yellow"></i> Detalle de Ítems a Preparar</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="tabla-despacho">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Código (Barra/SKU)</th>
+                        <th>Producto</th>
+                        <th class="text-center">Cant. Req.</th>
+                        <th class="text-center">Cant. Escaneada</th>
+                        <th class="text-center pe-4">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if factura %}
+                        {% for d in factura.detalles.all %}
+                        <tr data-codigo="{{ d.producto.codigo }}" data-alt1="{{ d.producto.codigo_alternativo|default:'' }}" data-alt2="{{ d.producto.codigo_alternativo_2|default:'' }}" data-alt3="{{ d.producto.codigo_alternativo_3|default:'' }}" data-mult1="{{ d.producto.cant_alternativo|default:1 }}" data-mult2="{{ d.producto.cant_alternativo_2|default:12 }}" data-mult3="{{ d.producto.cant_alternativo_3|default:24 }}" data-requerida="{{ d.cantidad|floatformat:0 }}" data-producto-id="{{ d.producto.id }}">
+                            <td class="ps-4">
+                                <strong>{{ d.producto.codigo }}</strong>
+                            </td>
+                            <td class="fw-bold fs-5">{{ d.producto.descripcion }}</td>
+                            <td class="text-center fw-bold fs-5 requerida">{{ d.cantidad|floatformat:0 }}</td>
+                            <td class="text-center bg-warning bg-opacity-25 fs-5 fw-bold text-primary escaneada">0</td>
+                            <td class="text-center pe-4 estado-icono">
+                                <i class="bi bi-circle text-muted fs-4"></i>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center text-muted py-4">No hay productos en esta factura.</td></tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="5" class="text-center text-muted py-4">Ingrese el número de factura arriba para comenzar.</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer border-0 bg-light p-4 text-end">
+        <form method="POST" action="{% if factura %}{% url 'confirmar_despacho' factura.id %}{% endif %}" id="form-despacho">
+            {% csrf_token %}
+            <button type="submit" id="btn-generar-despacho" class="btn btn-fs-yellow btn-lg fw-bold px-5 shadow-sm" disabled>
+                <i class="bi bi-check2-all"></i> GENERAR DESPACHO
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+
+<!-- Lógica de Escaneo JS -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const inputEscaner = document.getElementById('input-escaner');
+        const btnAgregarManual = document.getElementById('btn-agregar-manual');
+        const btnGenerarDespacho = document.getElementById('btn-generar-despacho');
+        const formDespacho = document.getElementById('form-despacho');
+        // Instancia de modal de Bootstrap
+        const modalError = new bootstrap.Modal(document.getElementById('modalErrorEscaneo'));
+        const modalMensaje = document.getElementById('mensajeErrorEscaneo');
+        
+        // Cambiar estado visual al enviar el formulario
+        if (formDespacho) {
+            formDespacho.addEventListener('submit', () => {
+                btnGenerarDespacho.disabled = true;
+                btnGenerarDespacho.innerHTML = '<i class="bi bi-clock-history"></i> GUARDANDO...';
+            });
+        }
+        
+        if (!inputEscaner) return; // Ya está despachado
+        
+        // Auto - foco
+        inputEscaner.focus();
+        
+        // Si se cierra el modal, devolver el foco a la pistola
+        document.getElementById('modalErrorEscaneo').addEventListener('hidden.bs.modal', function () {
+            inputEscaner.focus();
+            inputEscaner.value = '';
+        });
+        
+        // Verificar el estado global
+        function verificarEstadoGlobal() {
+            let todasCompletas = true;
+            const filas = document.querySelectorAll('#tabla-despacho tbody tr');
+            
+            filas.forEach(fila => {
+                const req = parseInt(fila.getAttribute('data-requerida') || '0', 10);
+                const esc = parseInt(fila.querySelector('.escaneada').innerText, 10);
+                if (req !== esc) {
+                    todasCompletas = false;
+                }
+            });
+            
+            if(todasCompletas && filas.length > 0) {
+                btnGenerarDespacho.removeAttribute('disabled');
+                btnGenerarDespacho.classList.replace('btn-fs-yellow', 'btn-success');
+                inputEscaner.setAttribute('disabled', 'true');
+            } else {
+                btnGenerarDespacho.setAttribute('disabled', 'true');
+                btnGenerarDespacho.classList.replace('btn-success', 'btn-fs-yellow');
+            }
+        }
+        
+        function procesarCodigo(codigoIngresado) {
+            codigoIngresado = codigoIngresado.trim().toLowerCase();
+            if(!codigoIngresado) return;
+            
+            const cantInput = document.getElementById('scan-cantidad');
+            if (cantInput && cantInput.dataset.autoSet === "true") {
+                cantInput.value = '1';
+                delete cantInput.dataset.autoSet;
+            }
+
+            // Analizar formato de multiplicador ingresado (ej: 5*codigo)
+            let scanCantidad = 1;
+            if (cantInput) {
+                const parsedVal = parseInt(cantInput.value.trim(), 10);
+                if (!isNaN(parsedVal) && parsedVal > 0) {
+                    scanCantidad = parsedVal;
+                }
+            }
+
+            let codigoLimpio = codigoIngresado;
+            
+            const asteriscoIndex = codigoIngresado.indexOf('*');
+            if (asteriscoIndex > 0 && asteriscoIndex < codigoIngresado.length - 1) {
+                const parteCantidad = codigoIngresado.substring(0, asteriscoIndex).trim();
+                const parteCodigo = codigoIngresado.substring(asteriscoIndex + 1).trim();
+                const cantParsed = parseInt(parteCantidad, 10);
+                if (/^\d+$/.test(parteCantidad) && !isNaN(cantParsed) && cantParsed > 0 && parteCodigo.length > 0) {
+                    scanCantidad = cantParsed;
+                    codigoLimpio = parteCodigo;
+                    if (cantInput) {
+                        cantInput.value = scanCantidad;
+                        cantInput.dataset.autoSet = "true";
+                    }
+                }
+            }
+            
+            // Buscar la fila respectiva y determinar el multiplicador según el tipo de código
+            let fila = null;
+            let multiplicador = 1; // Por defecto
+            
+            const filas = document.querySelectorAll('#tabla-despacho tbody tr');
+            for (const f of filas) {
+                const cod = (f.getAttribute('data-codigo') || '').toLowerCase();
+                const alt1 = (f.getAttribute('data-alt1') || '').toLowerCase();
+                const alt2 = (f.getAttribute('data-alt2') || '').toLowerCase();
+                const alt3 = (f.getAttribute('data-alt3') || '').toLowerCase();
+                
+                if (codigoLimpio === cod) {
+                    fila = f;
+                    multiplicador = 1;
+                    break;
+                } else if (codigoLimpio === alt1) {
+                    fila = f;
+                    const mult1 = parseInt(f.getAttribute('data-mult1'), 10);
+                    multiplicador = isNaN(mult1) ? 1 : mult1;
+                    break;
+                } else if (codigoLimpio === alt2) {
+                    fila = f;
+                    const mult2 = parseInt(f.getAttribute('data-mult2'), 10);
+                    multiplicador = isNaN(mult2) ? 12 : mult2;
+                    break;
+                } else if (codigoLimpio === alt3) {
+                    fila = f;
+                    const mult3 = parseInt(f.getAttribute('data-mult3'), 10);
+                    multiplicador = isNaN(mult3) ? 24 : mult3;
+                    break;
+                }
+            }
+            
+            if (fila) {
+                const required = parseInt(fila.getAttribute('data-requerida'), 10);
+                const escaneadaEl = fila.querySelector('.escaneada');
+                let escaneada = parseInt(escaneadaEl.innerText, 10);
+                
+                // Actualizar la descripción del producto en la interfaz
+                const descripcionEl = fila.querySelector('td:nth-child(2)');
+                const descInput = document.getElementById('producto-descripcion');
+                if (descInput && descripcionEl) {
+                    descInput.value = descripcionEl.innerText.trim();
+                }
+                
+                if (escaneada >= required) {
+                    let tipoCodigoMsg = 'código';
+                    const cod = fila.getAttribute('data-codigo');
+                    const alt1 = fila.getAttribute('data-alt1');
+                    const alt2 = fila.getAttribute('data-alt2');
+                    const alt3 = fila.getAttribute('data-alt3');
+                    
+                    if (codigoLimpio === alt2) tipoCodigoMsg = `código caja (pack de ${multiplicador})`;
+                    else if (codigoLimpio === alt3) tipoCodigoMsg = `código alternativo 3 (pack de ${multiplicador})`;
+                    else if (codigoLimpio === alt1) tipoCodigoMsg = `código unidad (pack de ${multiplicador})`;
+                    
+                    modalMensaje.innerText = `El producto con ${tipoCodigoMsg} "${codigoLimpio}" ya alcanzó la cantidad máxima solicitada en el despacho (${required} unidades).`;
+                    
+                    // Limpiar inputs en caso de error
+                    inputEscaner.value = '';
+                    if (cantInput) {
+                        cantInput.value = '1';
+                        delete cantInput.dataset.autoSet;
+                    }
+                    
+                    modalError.show();
+                    return;
+                }
+
+                const totalAAgregar = scanCantidad * multiplicador;
+                const nuevoTotal = escaneada + totalAAgregar;
+
+                if (nuevoTotal > required) {
+                    let tipoCodigoMsg = 'código';
+                    const alt1 = fila.getAttribute('data-alt1');
+                    const alt2 = fila.getAttribute('data-alt2');
+                    const alt3 = fila.getAttribute('data-alt3');
+                    
+                    if (codigoLimpio === alt2) tipoCodigoMsg = `código caja (pack de ${multiplicador})`;
+                    else if (codigoLimpio === alt3) tipoCodigoMsg = `código alternativo 3 (pack de ${multiplicador})`;
+                    else if (codigoLimpio === alt1) tipoCodigoMsg = `código unidad (pack de ${multiplicador})`;
+                    
+                    const restante = required - escaneada;
+                    modalMensaje.innerHTML = `<strong>SE HA SUPERADO LA CANTIDAD REQUERIDA EN EL ÍTEM</strong><br><br>El escaneo de "${codigoLimpio}" supera el faltante (quedan ${restante} de ${required} por preparar).`;
+                    
+                    // Limpiar inputs en caso de error
+                    inputEscaner.value = '';
+                    if (cantInput) {
+                        cantInput.value = '1';
+                        delete cantInput.dataset.autoSet;
+                    }
+                    
+                    modalError.show();
+                    return;
+                }
+
+                // Si pasa la validación, sumamos
+                escaneada = nuevoTotal;
+                escaneadaEl.innerText = escaneada;
+                
+                // Actualizar el icono de estado y sombreado de fila
+                const iconoObj = fila.querySelector('.estado-icono i');
+                if (escaneada === required) {
+                    // Completo: sombreado verde lima fuerte
+                    iconoObj.className = "bi bi-check-circle-fill icon-lime-dark fs-4";
+                    fila.classList.remove('table-warning', 'table-warning-fs');
+                    fila.classList.add('table-success-lime');
+                } else if (escaneada > 0) {
+                    // Parcial: sombreado amarillo OpenDTE
+                    iconoObj.className = "bi bi-arrow-repeat text-warning fs-4 spin-icon";
+                    fila.classList.add('table-warning-fs');
+                }
+                
+                // Limpiar input de escaneo y establecer la cantidad correcta del escaneo
+                inputEscaner.value = '';
+                inputEscaner.focus();
+                if (cantInput) {
+                    cantInput.value = totalAAgregar;
+                    cantInput.dataset.autoSet = "true";
+                }
+                verificarEstadoGlobal();
+            } else {
+                // Si no se encuentra, limpiar el campo de descripción
+                const descInput = document.getElementById('producto-descripcion');
+                if (descInput) {
+                    descInput.value = '';
+                }
+                modalMensaje.innerHTML = `El código escaneado <strong>"${codigoLimpio}"</strong> no corresponde a ningún producto del pedido de este despacho. Verifica que estás escaneando el código de barra correcto.`;
+                
+                // Limpiar inputs en caso de error
+                inputEscaner.value = '';
+                if (cantInput) {
+                    cantInput.value = '1';
+                    delete cantInput.dataset.autoSet;
+                }
+                
+                modalError.show();
+                return;
+            }
+        }
+
+        // Si el usuario edita la cantidad de forma manual, quitar el marcador de autoSet
+        const cantInputEl = document.getElementById('scan-cantidad');
+        if (cantInputEl) {
+            cantInputEl.addEventListener('input', () => {
+                delete cantInputEl.dataset.autoSet;
+            });
+        }
+
+        // Listener Pistola (Actúa cuando se presiona la tecla ENTER o TAB)
+        inputEscaner.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Evitamos que haga submit en caso que esté dentro del GET form
+                procesarCodigo(inputEscaner.value);
+            } else if (e.key === 'Tab') {
+                e.preventDefault();
+                const cantInput = document.getElementById('scan-cantidad');
+                if (cantInput) {
+                    cantInput.focus();
+                    cantInput.select();
+                }
+            }
+        });
+        
+        // Listener Botón Lupa de Producto
+        const btnBuscarProducto = document.getElementById('btn-buscar-producto');
+        if (btnBuscarProducto) {
+            btnBuscarProducto.addEventListener('click', () => {
+                procesarCodigo(inputEscaner.value);
+            });
+        }
+        
+        // Listener Botón Agregar Manual (Flecha)
+        if (btnAgregarManual) {
+            btnAgregarManual.addEventListener('click', () => {
+                procesarCodigo(inputEscaner.value);
+                inputEscaner.focus();
+            });
+        }
+
+        // Listener Enter en input de cantidad
+        const cantInput = document.getElementById('scan-cantidad');
+        if (cantInput) {
+            cantInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    procesarCodigo(inputEscaner.value);
+                    inputEscaner.focus();
+                }
+            });
+        }
+    });
+</script>
+
+{% if buscar and not multiple_matches %}
+    {% if estado_busqueda == 'DESPACHADO' %}
+    <div class="alert alert-success border text-center fs-5 py-4">
+        <i class="bi bi-check-circle-fill text-success me-2"></i> El documento Nº {{ buscar }} ya fue procesado.
+    </div>
+    {% elif estado_busqueda == 'NO_ENCONTRADO' %}
+    <div class="alert alert-warning border text-center fs-5 py-4">
+        <i class="bi bi-exclamation-circle-fill text-warning me-2"></i> Número de documento Nº {{ buscar }} no encontrado.
+    </div>
+    {% endif %}
+{% endif %}
+
+<!-- Modal Error Escaneo -->
+<div class="modal fade" id="modalErrorEscaneo" tabindex="-1" aria-labelledby="modalErrorEscaneoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-danger">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="modalErrorEscaneoLabel"><i class="bi bi-exclamation-triangle-fill"></i> Error:</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <i class="bi bi-x-circle text-danger mb-3 d-block" style="font-size: 4rem;"></i>
+                <p class="fs-5" id="mensajeErrorEscaneo"></p>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-secondary px-5" data-bs-dismiss="modal">Entendido</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

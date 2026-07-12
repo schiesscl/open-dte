@@ -1,0 +1,592 @@
+{% extends 'inventario/base.html' %}
+{% load static %}
+
+{% block title %}Inventario - OpenDTE{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-fs-grey fw-bold"><i class="bi bi-box-seam-fill text-fs-yellow"></i> Inventario de Productos</h2>
+    <div>
+        <button id="btn-editar-masivo" class="btn btn-outline-primary shadow-sm" disabled>
+            <i class="bi bi-pencil-square"></i> Editar Selección (<span id="selected-count">0</span>)
+        </button>
+        <button class="btn btn-dark border-secondary shadow-sm ms-2" data-bs-toggle="modal" data-bs-target="#modal-guia">
+            <i class="bi bi-file-earmark-arrow-up-fill text-fs-yellow"></i> Ingresar Guía Abastecimiento
+        </button>
+        <button class="btn btn-outline-success shadow-sm ms-2" data-bs-toggle="modal" data-bs-target="#modal-importar-excel">
+            <i class="bi bi-file-earmark-excel-fill"></i> Importar Excel
+        </button>
+        <button class="btn btn-fs-yellow shadow-sm ms-2" data-bs-toggle="modal" data-bs-target="#modal-producto">
+            <i class="bi bi-plus-circle"></i> Nuevo Producto
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <!-- TABS NAV -->
+        <ul class="nav nav-tabs mb-4" id="inventoryTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active fw-bold" id="productos-tab" data-bs-toggle="tab" data-bs-target="#productos-pane" type="button" role="tab" aria-controls="productos-pane" aria-selected="true">
+                    <i class="bi bi-box-seam me-1 text-fs-yellow"></i> Stock de Productos
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold" id="guias-tab" data-bs-toggle="tab" data-bs-target="#guias-pane" type="button" role="tab" aria-controls="guias-pane" aria-selected="false">
+                    <i class="bi bi-clock-history me-1 text-fs-yellow"></i> Historial de Guías
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="inventoryTabsContent">
+            <!-- TAB 1: PRODUCTOS -->
+            <div class="tab-pane fade show active" id="productos-pane" role="tabpanel" aria-labelledby="productos-tab" tabindex="0">
+                <div class="mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input 
+                            type="text" 
+                            class="form-control border-start-0" 
+                            id="buscar-productos" 
+                            placeholder="Buscar por código o descripción..."
+                            autocomplete="off"
+                        >
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;"><input type="checkbox" id="select-all-productos" class="form-check-input"></th>
+                                <th>Código OpenDTE</th>
+                                <th>Código Unidad</th>
+                                <th>Código Caja</th>
+                                <th>Código Alternativo</th>
+                                <th>Descripción</th>
+                                <th class="text-end">Stock Sistema ERP</th>
+                                <th class="text-end">Stock Temuco</th>
+                                <th>Diferencia</th>
+                                <th class="text-end">Mínimo</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-productos">
+                            {% for p in productos %}
+                            <tr data-producto-id="{{ p.id }}" style="cursor: pointer;">
+                                <td>
+                                    <input type="checkbox" class="form-check-input select-producto" data-id="{{ p.id }}">
+                                </td>
+                                <td><strong>{{ p.codigo }}</strong></td>
+                                <td>{% if p.codigo_alternativo %}{{ p.codigo_alternativo }} <span class="badge bg-light text-secondary border">x{{ p.cant_alternativo }}</span>{% else %}-{% endif %}</td>
+                                <td>{% if p.codigo_alternativo_2 %}{{ p.codigo_alternativo_2 }} <span class="badge bg-light text-secondary border">x{{ p.cant_alternativo_2 }}</span>{% else %}-{% endif %}</td>
+                                <td>{% if p.codigo_alternativo_3 %}{{ p.codigo_alternativo_3 }} <span class="badge bg-light text-secondary border">x{{ p.cant_alternativo_3 }}</span>{% else %}-{% endif %}</td>
+                                <td>{{ p.descripcion }}</td>
+                                <td class="text-end">
+                                    {% if p.stock_sistema is not None %}
+                                        {% if p.stock_sistema > 0 %}
+                                            <span class="badge bg-success rounded-pill">{{ p.stock_sistema }}</span>
+                                        {% elif p.stock_sistema < 0 %}
+                                            <span class="badge bg-danger rounded-pill">{{ p.stock_sistema }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary rounded-pill">0</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-secondary rounded-pill">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    {% if p.stock_actual > 0 %}
+                                        <span class="badge bg-success rounded-pill">{{ p.stock_actual }}</span>
+                                    {% elif p.stock_actual < 0 %}
+                                        <span class="badge bg-danger rounded-pill">{{ p.stock_actual }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary rounded-pill">0</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    {% if p.stock_diferencia > 0 %}
+                                        <span class="badge bg-warning rounded-pill">+{{ p.stock_diferencia }}</span>
+                                    {% elif p.stock_diferencia < 0 %}
+                                        <span class="badge bg-danger rounded-pill">{{ p.stock_diferencia }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary rounded-pill">0</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    {% if p.stock_minimo > 0 %}
+                                        <span class="badge bg-secondary rounded-pill">{{ p.stock_minimo }}</span>
+                                    {% elif p.stock_minimo < 0 %}
+                                        <span class="badge bg-danger rounded-pill">{{ p.stock_minimo }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary rounded-pill">0</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center" style="white-space: nowrap;">
+                                    <a href="{% url 'editar_producto' p.id %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+                                    <form method="POST" action="{% url 'eliminar_producto' p.id %}" style="display: inline;" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este producto? Si está asociado a alguna factura, no se podrá eliminar.');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan='11' class='text-center text-muted py-4'>No hay productos registrados.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 2: HISTORIAL DE GUIAS -->
+            <div class="tab-pane fade" id="guias-pane" role="tabpanel" aria-labelledby="guias-tab" tabindex="0">
+                <div class="mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input 
+                            type="text" 
+                            class="form-control border-start-0" 
+                            id="buscar-guias" 
+                            placeholder="Buscar guía por folio o usuario..."
+                            autocomplete="off"
+                        >
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Folio / Nº Guía</th>
+                                <th>Fecha de Registro</th>
+                                <th>Registrado por</th>
+                                <th class="text-end">Productos Ingresados</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-guias">
+                            {% for g in guias %}
+                            <tr data-guia-id="{{ g.id }}" class="guia-row">
+                                <td><strong>{{ g.numero }}</strong></td>
+                                <td>{{ g.fecha_registro|date:"d/m/Y H:i" }}</td>
+                                <td>{{ g.usuario.username|default:"Sistema" }}</td>
+                                <td class="text-end">
+                                    <span class="badge bg-secondary rounded-pill">{{ g.detalles.count }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-outline-primary btn-ver-detalle-guia" data-guia-id="{{ g.id }}">
+                                        <i class="bi bi-eye"></i> Ver Detalle
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted py-4">No se han registrado guías de abastecimiento.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Crear Producto -->
+<div class="modal fade" id="modal-producto" tabindex="-1" aria-labelledby="modal-producto-label" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-fs-yellow">
+                <h5 class="modal-title fw-bold" id="modal-producto-label">
+                    <i class="bi bi-plus-circle"></i> Crear Nuevo Producto
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'crear_producto' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold text-fs-grey">Código Principal (SKU) <span class="text-danger">*</span></label>
+                            {{ form.codigo }}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold text-fs-grey">Código Unidad (Alt 1)</label>
+                            {{ form.codigo_alternativo }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-fs-grey">Unidades (Mult 1)</label>
+                            {{ form.cant_alternativo }}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold text-fs-grey">Código Caja (Alt 2)</label>
+                            {{ form.codigo_alternativo_2 }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-fs-grey">Unidades (Mult 2)</label>
+                            {{ form.cant_alternativo_2 }}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold text-fs-grey">Código Alternativo (Alt 3)</label>
+                            {{ form.codigo_alternativo_3 }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-fs-grey">Unidades (Mult 3)</label>
+                            {{ form.cant_alternativo_3 }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-fs-grey">Descripción <span class="text-danger">*</span></label>
+                        {{ form.descripcion }}
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-fs-grey">Stock Temuco</label>
+                            {{ form.stock_actual }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-fs-grey">Real (Contado)</label>
+                            {{ form.stock_real }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-fs-grey">Diferencia</label>
+                            <input type="text" class="form-control bg-light" readonly value="0" />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-fs-grey">Stock Sistema ERP</label>
+                            {{ form.stock_sistema }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-fs-grey">Mínimo Reposición</label>
+                            {{ form.stock_minimo }}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-fs-grey">Precio de Venta</label>
+                            {{ form.precio_venta }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-fs-grey">Estado</label>
+                            <div class="form-check mt-2">
+                                {{ form.activo }}
+                                <label class="form-check-label" for="{{ form.activo.id_for_label }}">
+                                    Producto Activo
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-fs-yellow fw-bold">
+                        <i class="bi bi-save"></i> Crear Producto
+                    </button>
+                </div>
+            </form>
+</div>
+    </div>
+</div>
+
+<!-- Modal para Guía de Abastecimiento -->
+<div class="modal fade" id="modal-guia" tabindex="-1" aria-labelledby="modal-guia-label" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-fs-black text-white">
+                <h5 class="modal-title fw-bold" id="modal-guia-label">
+                    <i class="bi bi-file-earmark-arrow-up-fill text-fs-yellow me-2"></i> Ingresar Guía de Abastecimiento (Temuco)
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" id="btn-cerrar-modal-guia"></button>
+            </div>
+            
+            <div class="modal-body p-4 bg-light-fluent">
+                <!-- Contenedor de Alertas -->
+                <div id="guia-alert-container"></div>
+                
+                <!-- PASO 1: Subida de Archivo (Drag & Drop) -->
+                <div id="guia-paso-1" class="text-center py-5 px-3 border border-2 border-dashed rounded-3 bg-body" style="border-style: dashed !important; cursor: pointer; transition: background-color 0.2s;">
+                    <input type="file" id="guia-file-input" accept=".xml,.pdf" class="d-none">
+                    <i class="bi bi-cloud-arrow-up-fill text-fs-grey mb-3" style="font-size: 4rem;"></i>
+                    <h4 class="fw-bold">Arrastra tu guía de abastecimiento aquí</h4>
+                    <p class="text-muted">Soporta archivos de formato XML (DTE) y PDF (Facturas o Guías de Traslado)</p>
+                    <button type="button" class="btn btn-fs-yellow px-4 py-2 mt-2" onclick="document.getElementById('guia-file-input').click();">
+                        <i class="bi bi-folder2-open me-2"></i> Seleccionar Archivo
+                    </button>
+                </div>
+                
+                <!-- PASO 2: Tabla de Items Editable -->
+                <div id="guia-paso-2" class="d-none">
+                    <div class="row align-items-center mb-3">
+                        <div class="col-md-4">
+                            <label for="guia-folio" class="form-label fw-bold text-fs-grey">Folio / Número de Guía <span class="text-danger">*</span></label>
+                            <input type="number" id="guia-folio" class="form-control form-control-lg fw-bold text-primary" placeholder="Ej: 123456" min="1">
+                        </div>
+                        <div class="col-md-8 text-end pt-4">
+                            <button type="button" class="btn btn-outline-primary shadow-sm" id="btn-agregar-item-guia">
+                                <i class="bi bi-plus-circle me-1"></i> Agregar Item Manual
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive style-scrollbar" style="max-height: 450px;">
+                        <table class="table table-hover align-middle border mb-0">
+                            <thead class="bg-fs-black text-white sticky-top">
+                                <tr>
+                                    <th style="width: 15%;">Código Guía</th>
+                                    <th style="width: 25%;">Descripción Guía</th>
+                                    <th style="width: 45%;">Asociar Producto Catálogo <span class="text-danger">*</span></th>
+                                    <th style="width: 10%;" class="text-end">Cantidad <span class="text-danger">*</span></th>
+                                    <th style="width: 5%;" class="text-center">Eliminar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="guia-tabla-items">
+                                <!-- Filas dinámicas -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer bg-light-fluent border-top-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" id="btn-guia-cancelar">Cerrar</button>
+                <button type="button" class="btn btn-secondary d-none" id="btn-guia-atras">
+                    <i class="bi bi-arrow-left me-1"></i> Volver a Subir
+                </button>
+                <button type="button" class="btn btn-fs-yellow fw-bold px-4 d-none" id="btn-guia-confirmar">
+                    <i class="bi bi-check2-all me-1"></i> Confirmar e Incrementar Stock
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Ver Detalles de Guía de Abastecimiento -->
+<div class="modal fade" id="modal-detalle-guia" tabindex="-1" aria-labelledby="modal-detalle-guia-label" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-fs-black text-white">
+                <h5 class="modal-title fw-bold" id="modal-detalle-guia-label">
+                    <i class="bi bi-file-earmark-text text-fs-yellow me-2"></i> Detalle de Guía de Abastecimiento
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 bg-light-fluent">
+                <div class="row mb-3 pb-2 border-bottom">
+                    <div class="col-6">
+                        <span class="text-muted small">Folio / Número:</span>
+                        <h4 class="fw-bold text-primary mb-0" id="det-guia-folio">-</h4>
+                    </div>
+                    <div class="col-6 text-end">
+                        <span class="text-muted small">Fecha de Ingreso:</span>
+                        <div class="fw-bold" id="det-guia-fecha">-</div>
+                        <span class="text-muted small">Registrado por:</span>
+                        <div><span class="fw-bold" id="det-guia-usuario">-</span></div>
+                    </div>
+                </div>
+                <h6 class="fw-bold text-fs-grey mb-3">Productos Ingresados al Inventario:</h6>
+                <div class="table-responsive style-scrollbar" style="max-height: 300px;">
+                    <table class="table table-hover align-middle border mb-0">
+                        <thead class="bg-fs-black text-white sticky-top">
+                            <tr>
+                                <th>Código</th>
+                                <th>Descripción</th>
+                                <th class="text-end">Cantidad</th>
+                            </tr>
+                        </thead>
+                        <tbody id="det-guia-tabla-items">
+                            <!-- Items dinámicos -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer bg-light-fluent border-top-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Importar Excel -->
+<div class="modal fade" id="modal-importar-excel" tabindex="-1" aria-labelledby="modal-importar-excel-label" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold" id="modal-importar-excel-label">
+                    <i class="bi bi-file-earmark-excel-fill text-white me-2"></i> Importar Inventario desde Excel
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" id="btn-cerrar-modal-excel"></button>
+            </div>
+            
+            <div class="modal-body p-4 bg-light-fluent">
+                <!-- Contenedor de Alertas -->
+                <div id="excel-alert-container"></div>
+                
+                <!-- PASO 1: Subida de Archivo (Drag & Drop) -->
+                <div id="excel-paso-1" class="text-center py-5 px-3 border border-2 border-dashed rounded-3 bg-body" style="border-style: dashed !important; cursor: pointer; transition: background-color 0.2s;">
+                    <input type="file" id="excel-file-input" accept=".xlsx,.xls" class="d-none">
+                    <i class="bi bi-file-earmark-excel-fill text-success mb-3" style="font-size: 4rem;"></i>
+                    <h4 class="fw-bold">Arrastra tu archivo Excel aquí</h4>
+                    <p class="text-muted">Soporta formatos .xlsx y .xls (Hoja 1, fila 1 cabeceras)</p>
+                    <button type="button" class="btn btn-success px-4 py-2 mt-2" onclick="document.getElementById('excel-file-input').click();">
+                        <i class="bi bi-folder2-open me-2"></i> Seleccionar Archivo
+                    </button>
+                </div>
+                
+                <!-- PASO 2: Mapeo de Columnas, Configuración y Vista Previa -->
+                <div id="excel-paso-2" class="d-none">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-body bg-body">
+                            <h5 class="fw-bold mb-3 text-fs-grey"><i class="bi bi-sliders me-2 text-success"></i> Mapeo de Columnas y Configuración</h5>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Columna Código (OpenDTE) <span class="text-danger">*</span></label>
+                                    <select id="excel-map-codigo" class="form-select"></select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Columna Stock Temuco (Cantidad)</label>
+                                    <select id="excel-map-actual" class="form-select"></select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Columna Stock Sistema ERP</label>
+                                    <select id="excel-map-sistema" class="form-select"></select>
+                                </div>
+                            </div>
+                            <div class="row g-3 mt-2">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Columna Stock Mínimo</label>
+                                    <select id="excel-map-minimo" class="form-select"></select>
+                                </div>
+                            </div>
+                            
+                            <hr class="my-4">
+                            
+                            <div class="row align-items-center">
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold mb-1 d-block">Tratamiento de celdas vacías o no numéricas:</label>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="excel-no-numericos" id="excel-non-keep" value="mantener" checked>
+                                        <label class="form-check-label" for="excel-non-keep">Mantener stock actual en base de datos</label>
+                                    </div>
+                                    <div class="form-check form-check-inline ms-3">
+                                        <input class="form-check-input" type="radio" name="excel-no-numericos" id="excel-non-zero" value="cero">
+                                        <label class="form-check-label" for="excel-non-zero">Establecer stock a 0</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h5 class="fw-bold mb-2 text-fs-grey"><i class="bi bi-eye me-2 text-success"></i> Vista Previa (Primeras 5 filas)</h5>
+                    <div class="table-responsive style-scrollbar border rounded" style="max-height: 250px;">
+                        <table class="table table-hover align-middle mb-0 bg-body">
+                            <thead class="bg-fs-black text-white sticky-top">
+                                <tr id="excel-preview-head">
+                                    <!-- Cabeceras dinámicas -->
+                                </tr>
+                            </thead>
+                            <tbody id="excel-preview-body">
+                                <!-- Filas dinámicas -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- PASO 3: Resultados detallados de omitidos -->
+                <div id="excel-paso-3" class="d-none">
+                    <div class="alert alert-success d-flex align-items-center mb-4" role="alert">
+                        <i class="bi bi-check-circle-fill me-3 fs-3 text-white"></i>
+                        <div>
+                            <h5 class="alert-heading fw-bold mb-1">¡Importación Completada con Éxito!</h5>
+                            <span id="excel-res-resumen">Se actualizaron X productos.</span>
+                        </div>
+                    </div>
+                    
+                    <div id="excel-container-omitidos" class="d-none">
+                        <h6 class="fw-bold text-danger mb-2"><i class="bi bi-exclamation-triangle-fill me-2"></i> Códigos no encontrados en el catálogo (omitidos):</h6>
+                        <p class="text-muted small">Los siguientes códigos venían en el archivo Excel pero no coinciden con ningún producto principal o alternativo registrado.</p>
+                        <div class="border rounded p-3 bg-white style-scrollbar" style="max-height: 200px; overflow-y: auto;">
+                            <ul class="list-unstyled mb-0 row" id="excel-list-omitidos">
+                                <!-- Elementos dinámicos -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- PASO DE ESPERA: Procesamiento y Barra de Progreso -->
+                <div id="excel-paso-procesando" class="d-none text-center py-5">
+                    <div class="progress mb-3 mx-auto" style="height: 15px; max-width: 500px; border-radius: 10px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%" id="excel-progress-bar"></div>
+                    </div>
+                    <h5 class="fw-bold mb-1" id="excel-progress-title">Procesando importación...</h5>
+                    <p class="text-muted small" id="excel-progress-detail">Actualizando base de datos...</p>
+                </div>
+            </div>
+            
+            <div class="modal-footer bg-light-fluent border-top-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" id="btn-excel-cancelar">Cerrar</button>
+                <button type="button" class="btn btn-secondary d-none" id="btn-excel-atras">
+                    <i class="bi bi-arrow-left me-1"></i> Volver a Subir
+                </button>
+                <button type="button" class="btn btn-success fw-bold px-4 d-none" id="btn-excel-confirmar">
+                    <i class="bi bi-check2-all me-1"></i> Confirmar y Reemplazar Stock
+                </button>
+                <button type="button" class="btn btn-primary fw-bold px-4 d-none" id="btn-excel-finalizar" onclick="window.location.reload();">
+                    <i class="bi bi-arrow-clockwise me-1"></i> Finalizar y Recargar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script id="inventario-config" type="application/json">
+{
+    "csrfToken": "{{ csrf_token }}",
+    "urls": {
+        "analizarGuia": "{% url 'analizar_guia_abastecimiento' %}",
+        "procesarGuia": "{% url 'procesar_guia_abastecimiento' %}",
+        "analizarExcel": "{% url 'analizar_importar_excel' %}",
+        "procesarExcel": "{% url 'procesar_importar_excel' %}"
+    },
+    "productos": [
+        {% for p in productos %}
+        {
+            "id": {{ p.id }},
+            "codigo": "{{ p.codigo|escapejs }}",
+            "descripcion": "{{ p.descripcion|escapejs }}"
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ],
+    "guiasDetalles": {
+        {% for g in guias %}
+        "{{ g.id }}": [
+            {% for d in g.detalles.all %}
+            {
+                "codigo": "{{ d.producto.codigo|escapejs }}",
+                "descripcion": "{{ d.producto.descripcion|escapejs }}",
+                "cantidad": {{ d.cantidad }}
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    }
+}
+</script>
+<script src="{% static 'js/inventario.js' %}"></script>
+{% endblock %}

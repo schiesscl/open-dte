@@ -1,0 +1,83 @@
+{% load custom_filters %}
+<div class="modal fade" id="modalDetalleFactura" tabindex="-1" aria-labelledby="modalDetalleFacturaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            
+            <div class="modal-header bg-fs-black text-white">
+                <h5 class="modal-title" id="modalDetalleFacturaLabel">
+                    <i class="bi bi-file-earmark-text text-fs-yellow"></i> Factura Nº {{ factura.numero }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body p-4 bg-light">
+                <div class="mb-4">
+                    <h6 class="text-fs-yellow fw-bold border-bottom pb-2"><i class="bi bi-info-circle"></i> Información General</h6>
+                    <div class="row mt-3">
+                        <div class="col-md-6 mb-3">
+                            <p class="mb-1"><span class="fw-bold text-muted">Cliente:</span> {{ factura.cliente.razon_social }}</p>
+                            <p class="mb-1"><span class="fw-bold text-muted">R.U.T.:</span> {{ factura.cliente.rut }}</p>
+                            <p class="mb-1"><span class="fw-bold text-muted">Giro:</span> {{ factura.cliente.giro|default:"No registrado" }}</p>
+                            <p class="mb-0"><span class="fw-bold text-muted">Dirección:</span> {{ factura.cliente.direccion }}, {{ factura.cliente.comuna }}, {{ factura.cliente.ciudad }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3 border-start">
+                            <p class="mb-1"><span class="fw-bold text-muted">Fecha de Emisión:</span> {{ factura.fecha_emision|date:"d M Y" }}</p>
+                            <p class="mb-1"><span class="fw-bold text-muted">Tipo de Documento:</span> {{ factura.tipo_documento }}</p>
+                            <p class="mb-1"><span class="fw-bold text-muted">Fecha de Ingreso:</span> {{ factura.fecha_subida|date:"d M Y, H:i" }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <h6 class="text-fs-yellow fw-bold border-bottom pb-2"><i class="bi bi-list-check"></i> Detalle de Productos</h6>
+                    <table class="table table-hover align-middle mb-0 mt-3">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Código</th>
+                                <th>Descripción</th>
+                                <th class="text-center">Cant.</th>
+                                <th class="text-end">Precio Unit.</th>
+                                <th class="text-end">Total Línea</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in detalles %}
+                            <tr>
+                                <td><strong>{{ m.producto.codigo }}</strong></td>
+                                <td style="font-size: 0.9rem;">{{ m.producto.descripcion }}</td>
+                                <td class="text-center">{{ m.cantidad }} {{ m.producto.unidad_medida }}</td>
+                                <td class="text-end">${{ m.precio_unitario|price_format }}</td>
+                                <td class="text-end fw-bold">${{ m.total_linea|price_format }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">No hay detalles registrados para esta factura.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="3" class="border-0"></td>
+                                <td class="text-end fw-bold text-muted border-0">Monto Neto:</td>
+                                <td class="text-end fw-bold border-0">${{ factura.neto|price_format }}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="border-0"></td>
+                                <td class="text-end fw-bold text-muted border-0">IVA (19%):</td>
+                                <td class="text-end fw-bold border-0">${{ factura.iva|price_format }}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="border-0 pb-3"></td>
+                                <td class="text-end fw-bold text-dark fs-5 border-0 pb-3">Total MOP:</td>
+                                <td class="text-end fw-bold text-fs-yellow fs-5 border-0 pb-3">${{ factura.total|price_format }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-top-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,71 @@
+{% extends 'inventario/base.html' %}
+
+{% block title %}Editar Cliente - OpenDTE{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-xl-8 col-lg-10">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="text-fs-grey fw-bold"><i class="bi bi-person-lines-fill text-fs-yellow"></i> Editar Cliente</h2>
+            <a href="{% url 'lista_clientes' %}" class="btn btn-outline-secondary shadow-sm">
+                <i class="bi bi-arrow-left"></i> Volver a Clientes
+            </a>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4 p-md-5">
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <h5 class="text-muted border-bottom pb-2 mb-4">Información Principal</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <label class="form-label fw-bold text-fs-grey">R.U.T. Empresa</label>
+                            {{ form.rut }}
+                            <small class="text-muted">El RUT no puede ser modificado.</small>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold text-fs-grey">Razón Social</label>
+                            {{ form.razon_social }}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-fs-grey">Giro Comercial</label>
+                        {{ form.giro }}
+                    </div>
+
+                    <h5 class="text-muted border-bottom pb-2 mb-4 mt-5">Datos de Contacto y Ubicación</h5>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-fs-grey">Dirección</label>
+                        {{ form.direccion }}
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <label class="form-label fw-bold text-fs-grey">Comuna</label>
+                            {{ form.comuna }}
+                        </div>
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <label class="form-label fw-bold text-fs-grey">Ciudad</label>
+                            {{ form.ciudad }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-fs-grey">Teléfono</label>
+                            {{ form.telefono }}
+                        </div>
+                    </div>
+
+                    <div class="d-grid mt-5">
+                        <button type="submit" class="btn btn-fs-yellow fw-bold btn-lg shadow-sm">
+                            <i class="bi bi-save"></i> Guardar Cambios del Cliente
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+    </div>
+</div>
+{% endblock %}

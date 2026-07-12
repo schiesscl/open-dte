@@ -1,0 +1,728 @@
+{% extends 'inventario/base.html' %}
+
+{% block title %}Buzón Compartido - OpenDTE{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-fs-grey fw-bold">
+        <i class="bi bi-folder-symlink-fill text-fs-yellow"></i> Buzón Compartido
+    </h2>
+    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver al Panel
+    </a>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex align-items-start mb-3">
+            <i class="bi bi-info-circle-fill text-primary fs-3 me-3"></i>
+            <div>
+                <h5 class="fw-bold mb-1">Carga desde Carpeta Compartida</h5>
+                <p class="text-muted mb-0 small">
+                    Los operarios y choferes pueden depositar facturas en PDF o XML en la carpeta compartida <code>media/compartida/</code>. 
+                    Confirme y apruebe las facturas a continuación para procesarlas formalmente.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+</div>
+
+<!-- Sincronizador de Carpeta Local (File System Access API) -->
+<div class="card shadow-sm border-0 mb-4 overflow-hidden" id="sincronizador-local-card">
+    <div class="card-body p-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+            <div class="d-flex align-items-center">
+                <div class="bg-light p-3 rounded-3 me-3 text-secondary" style="border: 1px solid var(--sidebar-border);">
+                    <i class="bi bi-folder2-open fs-3 text-fs-grey"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold mb-1 text-dark">Sincronizador de Carpeta Local (PC)</h5>
+                    <p class="text-muted mb-0 small">
+                        Vincula una carpeta local para detectar y subir automáticamente facturas (PDF/XML) al servidor.
+                    </p>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-secondary px-3 py-2 fw-bold text-uppercase d-flex align-items-center gap-1 shadow-sm" id="sync-status-badge">
+                    <i class="bi bi-cloud-slash-fill"></i> Desconectado
+                </span>
+            </div>
+        </div>
+
+        <div id="sync-details" class="d-none">
+            <div class="alert alert-info border-0 rounded-3 mb-3 py-2 px-3 small d-flex flex-wrap justify-content-between align-items-center gap-2 bg-light text-dark" style="border: 1px solid var(--sidebar-border) !important;">
+                <div>
+                    <i class="bi bi-folder-check text-success me-2"></i>
+                    <strong>Carpeta Vinculada:</strong> <span id="sync-folder-name" class="font-monospace text-primary">Ninguna</span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button id="btn-conectar-carpeta" class="btn btn-sm btn-primary fw-bold d-none">
+                        <i class="bi bi-key-fill"></i> Autorizar Acceso
+                    </button>
+                    <button id="btn-desvincular-carpeta" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-x-circle-fill"></i> Desvincular
+                    </button>
+                </div>
+            </div>
+            
+            <div class="mb-3 p-3 rounded-3 bg-light text-dark" style="border: 1px solid var(--sidebar-border);">
+                <label for="sync-local-path-display" class="form-label small fw-bold text-muted mb-2">Ruta absoluta de referencia en tu PC (ej: C:\Facturas):</label>
+                <div class="d-flex gap-2">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white text-secondary"><i class="bi bi-pc-display"></i></span>
+                        <input type="text" class="form-control text-dark font-monospace" id="sync-local-path-display" placeholder="Escribe la ruta local para referencia visual (ej: C:\Facturas)">
+                    </div>
+                    <button class="btn btn-sm btn-dark text-nowrap fw-bold" id="btn-guardar-ruta-ref">Guardar Ruta</button>
+                </div>
+                <div class="form-text text-muted small mt-1" style="font-size: 0.72rem;">
+                    * Por políticas de seguridad, los navegadores no permiten leer la ruta del disco duro del PC de forma automática. Escribe la ruta completa aquí para mantenerla como referencia visual permanente.
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mb-3" id="sync-actions-row">
+            <button id="btn-vincular-carpeta" class="btn btn-dark btn-fs-yellow text-fs-black fw-bold px-3 py-2 shadow-sm d-flex align-items-center gap-2">
+                <i class="bi bi-folder-plus fs-5"></i> Vincular Carpeta Local
+            </button>
+            <button id="btn-escanear-compat" class="btn btn-dark btn-fs-yellow text-fs-black fw-bold px-3 py-2 shadow-sm d-none align-items-center gap-2">
+                <i class="bi bi-folder-plus fs-5"></i> Escanear Carpeta Local (Compatibilidad)
+            </button>
+            <input type="file" id="sync-compat-input" webkitdirectory directory multiple class="d-none">
+            <button id="btn-limpiar-historial" class="btn btn-outline-secondary btn-sm d-none">
+                <i class="bi bi-arrow-counterclockwise"></i> Limpiar Historial de Sincronización
+            </button>
+        </div>
+
+        <!-- Consola de Logs con scroll -->
+        <div id="sync-log-container" class="d-none mt-3">
+            <h6 class="text-muted small fw-bold mb-2 d-flex justify-content-between align-items-center">
+                <span>Registro de Actividades</span>
+                <span id="sync-queue-badge" class="badge bg-dark text-fs-yellow">0 archivos procesados</span>
+            </h6>
+            <div id="sync-log-console" class="font-monospace p-3 bg-dark text-success rounded-3 small overflow-auto" style="max-height: 150px; font-size: 0.825rem; line-height: 1.4; border: 1px solid #333;">
+                <div class="text-secondary">[Esperando vinculación de carpeta...]</div>
+            </div>
+        </div>
+        
+        <!-- Alerta de incompatibilidad de API -->
+        <div id="api-unsupported-alert" class="alert alert-info border-0 rounded-3 d-none mb-0 small text-dark mt-2 bg-light" style="border: 1px solid var(--sidebar-border) !important;">
+            <i class="bi bi-info-circle-fill me-2 text-info fs-5"></i>
+            <strong>Modo Compatibilidad Activo:</strong> Tu navegador (Firefox/Safari) no permite escaneo continuo en segundo plano. Haz clic en el botón superior para escanear y sincronizar tu carpeta local manualmente de forma rápida e incremental.
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
+        <h5 class="text-fs-grey fw-bold mb-0">
+            <i class="bi bi-files"></i> Facturas Pendientes de Confirmación
+        </h5>
+        <span class="badge bg-dark text-fs-yellow fw-bold px-3 py-2" id="header-file-count">
+            {{ facturas_compartidas|length }} archivo(s)
+        </span>
+    </div>
+    <div class="card-body">
+        <div id="compartida-lista-container">
+            {% if facturas_compartidas %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nombre del Archivo</th>
+                            <th>Tipo</th>
+                            <th>Tamaño</th>
+                            <th>Modificado</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for archivo in facturas_compartidas %}
+                        <tr>
+                            <td>
+                                <span class="d-block fw-bold text-dark text-break">{{ archivo.nombre }}</span>
+                            </td>
+                            <td>
+                                {% if archivo.es_pdf %}
+                                <span class="badge bg-danger text-white px-2 py-1"><i class="bi bi-filetype-pdf"></i> PDF</span>
+                                {% elif archivo.es_xml %}
+                                <span class="badge bg-info text-dark px-2 py-1"><i class="bi bi-filetype-xml"></i> XML</span>
+                                {% else %}
+                                <span class="badge bg-secondary text-white px-2 py-1">Archivo</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ archivo.tamano }} KB</td>
+                            <td>{{ archivo.fecha_modificacion|date:"d/m/Y H:i" }}</td>
+                            <td class="text-end">
+                                <div class="d-inline-flex gap-2">
+                                    <!-- Botón Confirmar e Importar -->
+                                    <form action="{% url 'importar_factura_compartida' %}" method="POST">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="filename" value="{{ archivo.nombre }}">
+                                        <button type="submit" class="btn btn-sm btn-success fw-bold d-flex align-items-center gap-1 shadow-sm">
+                                            <i class="bi bi-check-circle-fill"></i> Confirmar y Cargar
+                                        </button>
+                                    </form>
+                                    
+                                    <!-- Botón Eliminar -->
+                                    <form action="{% url 'eliminar_factura_compartida' %}" method="POST" onsubmit="return confirm('¿Está seguro de que desea eliminar permanentemente este archivo del buzón compartido?');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="filename" value="{{ archivo.nombre }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1">
+                                            <i class="bi bi-trash3-fill"></i> Eliminar
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-folder-check display-3 text-success mb-3"></i>
+                <h5 class="fw-bold">Buzón vacío</h5>
+                <p class="text-muted mb-0">No hay nuevas facturas en la carpeta compartida en este momento.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Tarjeta de Documentos con Errores de Procesamiento -->
+<div class="card shadow-sm border-0 mt-4 mb-4">
+    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
+        <h5 class="text-danger fw-bold mb-0">
+            <i class="bi bi-exclamation-triangle-fill"></i> Documentos con Errores de Procesamiento
+        </h5>
+        <span class="badge bg-danger text-white fw-bold px-3 py-2" id="header-err-count">
+            {{ facturas_erroneas|length }} archivo(s)
+        </span>
+    </div>
+    <div class="card-body">
+        <div id="errores-lista-container">
+            {% if facturas_erroneas %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nombre del Archivo</th>
+                            <th>Tipo</th>
+                            <th>Tamaño</th>
+                            <th>Modificado</th>
+                            <th>Detalle del Error</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for archivo in facturas_erroneas %}
+                        <tr>
+                            <td>
+                                <span class="d-block fw-bold text-dark text-break">{{ archivo.nombre }}</span>
+                            </td>
+                            <td>
+                                {% if archivo.es_pdf %}
+                                <span class="badge bg-danger text-white px-2 py-1"><i class="bi bi-filetype-pdf"></i> PDF</span>
+                                {% elif archivo.es_xml %}
+                                <span class="badge bg-info text-dark px-2 py-1"><i class="bi bi-filetype-xml"></i> XML</span>
+                                {% else %}
+                                <span class="badge bg-secondary text-white px-2 py-1">Archivo</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ archivo.tamano }} KB</td>
+                            <td>{{ archivo.fecha_modificacion|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <span class="text-danger small"><i class="bi bi-x-circle-fill"></i> {{ archivo.error_mensaje }}</span>
+                            </td>
+                            <td class="text-end">
+                                <!-- Botón Eliminar -->
+                                <form action="{% url 'eliminar_factura_compartida' %}" method="POST" onsubmit="return confirm('¿Está seguro de que desea eliminar permanentemente este archivo de error?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="filename" value="{{ archivo.nombre }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1 float-end">
+                                        <i class="bi bi-trash3-fill"></i> Eliminar
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-check-circle-fill display-4 text-success mb-2"></i>
+                <h6 class="fw-bold">Sin errores de procesamiento</h6>
+                <p class="text-muted mb-0 small">Todos los archivos recientes se leyeron y guardaron correctamente.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const container = document.getElementById('compartida-lista-container');
+        const headerBadge = document.getElementById('header-file-count');
+        const errContainer = document.getElementById('errores-lista-container');
+        const headerErrBadge = document.getElementById('header-err-count');
+        const csrfToken = '{{ csrf_token }}';
+        const urlImportar = '{% url "importar_factura_compartida" %}';
+        const urlEliminar = '{% url "eliminar_factura_compartida" %}';
+        
+        const renderLista = (facturas) => {
+            if (!facturas || facturas.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="bi bi-folder-check display-3 text-success mb-3"></i>
+                        <h5 class="fw-bold">Buzón vacío</h5>
+                        <p class="text-muted mb-0">No hay nuevas facturas en la carpeta compartida en este momento.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let rowsHtml = '';
+            facturas.forEach(archivo => {
+                let typeBadge = '';
+                if (archivo.es_pdf) {
+                    typeBadge = `<span class="badge bg-danger text-white px-2 py-1"><i class="bi bi-filetype-pdf"></i> PDF</span>`;
+                } else if (archivo.es_xml) {
+                    typeBadge = `<span class="badge bg-info text-dark px-2 py-1"><i class="bi bi-filetype-xml"></i> XML</span>`;
+                } else {
+                    typeBadge = `<span class="badge bg-secondary text-white px-2 py-1">Archivo</span>`;
+                }
+
+                rowsHtml += `
+                    <tr>
+                        <td>
+                            <span class="d-block fw-bold text-dark text-break">${archivo.nombre}</span>
+                        </td>
+                        <td>${typeBadge}</td>
+                        <td>${archivo.tamano} KB</td>
+                        <td>${archivo.fecha_modificacion}</td>
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-2">
+                                <!-- Botón Confirmar e Importar -->
+                                <form action="${urlImportar}" method="POST">
+                                    <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                                    <input type="hidden" name="filename" value="${archivo.nombre}">
+                                    <button type="submit" class="btn btn-sm btn-success fw-bold d-flex align-items-center gap-1 shadow-sm">
+                                        <i class="bi bi-check-circle-fill"></i> Confirmar y Cargar
+                                    </button>
+                                </form>
+                                
+                                <!-- Botón Eliminar -->
+                                <form action="${urlEliminar}" method="POST" onsubmit="return confirm('¿Está seguro de que desea eliminar permanentemente este archivo del buzón compartido?');">
+                                    <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                                    <input type="hidden" name="filename" value="${archivo.nombre}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1">
+                                        <i class="bi bi-trash3-fill"></i> Eliminar
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            container.innerHTML = `
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nombre del Archivo</th>
+                                <th>Tipo</th>
+                                <th>Tamaño</th>
+                                <th>Modificado</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        };
+
+        const renderErrores = (errores) => {
+            if (!errores || errores.length === 0) {
+                errContainer.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="bi bi-check-circle-fill display-4 text-success mb-2"></i>
+                        <h6 class="fw-bold">Sin errores de procesamiento</h6>
+                        <p class="text-muted mb-0 small">Todos los archivos recientes se leyeron y guardaron correctamente.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let rowsHtml = '';
+            errores.forEach(archivo => {
+                let typeBadge = '';
+                if (archivo.es_pdf) {
+                    typeBadge = `<span class="badge bg-danger text-white px-2 py-1"><i class="bi bi-filetype-pdf"></i> PDF</span>`;
+                } else if (archivo.es_xml) {
+                    typeBadge = `<span class="badge bg-info text-dark px-2 py-1"><i class="bi bi-filetype-xml"></i> XML</span>`;
+                } else {
+                    typeBadge = `<span class="badge bg-secondary text-white px-2 py-1">Archivo</span>`;
+                }
+
+                rowsHtml += `
+                    <tr>
+                        <td>
+                            <span class="d-block fw-bold text-dark text-break">${archivo.nombre}</span>
+                        </td>
+                        <td>${typeBadge}</td>
+                        <td>${archivo.tamano} KB</td>
+                        <td>${archivo.fecha_modificacion}</td>
+                        <td>
+                            <span class="text-danger small"><i class="bi bi-x-circle-fill"></i> ${archivo.error_mensaje}</span>
+                        </td>
+                        <td class="text-end">
+                            <!-- Botón Eliminar -->
+                            <form action="${urlEliminar}" method="POST" onsubmit="return confirm('¿Está seguro de que desea eliminar permanentemente este archivo de error?');">
+                                <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                                <input type="hidden" name="filename" value="${archivo.nombre}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1 float-end">
+                                    <i class="bi bi-trash3-fill"></i> Eliminar
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            errContainer.innerHTML = `
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nombre del Archivo</th>
+                                <th>Tipo</th>
+                                <th>Tamaño</th>
+                                <th>Modificado</th>
+                                <th>Detalle del Error</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        };
+
+        // Escuchar el evento global 'sharedFolderUpdated' disparado por el polling de base.html
+        window.addEventListener('sharedFolderUpdated', (e) => {
+            const data = e.detail;
+            const count = data.cant_compartidas;
+            const facturas = data.facturas_compartidas;
+            const errores = data.facturas_erroneas || [];
+
+            if (headerBadge) {
+                headerBadge.textContent = `${count} archivo(s)`;
+            }
+            if (headerErrBadge) {
+                headerErrBadge.textContent = `${errores.length} archivo(s)`;
+            }
+            renderLista(facturas);
+            renderErrores(errores);
+        });
+
+        // --- MOTOR DE SINCRONIZACIÓN LOCAL (FILE SYSTEM ACCESS API) ---
+        const supportFileSystemAPI = 'showDirectoryPicker' in window;
+        
+        const statusBadge = document.getElementById('sync-status-badge');
+        const syncDetails = document.getElementById('sync-details');
+        const folderNameSpan = document.getElementById('sync-folder-name');
+        const btnVincular = document.getElementById('btn-vincular-carpeta');
+        const btnConectar = document.getElementById('btn-conectar-carpeta');
+        const btnDesvincular = document.getElementById('btn-desvincular-carpeta');
+        const btnLimpiar = document.getElementById('btn-limpiar-historial');
+        const logContainer = document.getElementById('sync-log-container');
+        const logConsole = document.getElementById('sync-log-console');
+        const queueBadge = document.getElementById('sync-queue-badge');
+        const unsupportedAlert = document.getElementById('api-unsupported-alert');
+        const inputPathDisplay = document.getElementById('sync-local-path-display');
+        const btnGuardarRuta = document.getElementById('btn-guardar-ruta-ref');
+        const btnEscanearCompat = document.getElementById('btn-escanear-compat');
+        const inputCompat = document.getElementById('sync-compat-input');
+        
+        let isScanning = false;
+        
+        const updateProcessedBadge = () => {
+            if (queueBadge) {
+                queueBadge.textContent = `${window.globalSync.processedCount} archivos procesados`;
+            }
+        };
+        updateProcessedBadge();
+
+        const addLog = (message, type = 'info') => {
+            if (!logConsole) return;
+            const timeStr = new Date().toLocaleTimeString();
+            let colorStyle = 'color: #28a745;';
+            
+            if (type === 'error') colorStyle = 'color: #dc3545; font-weight: bold;';
+            else if (type === 'warning') colorStyle = 'color: #ffc107;';
+            else if (type === 'system') colorStyle = 'color: #17a2b8;';
+            else if (type === 'debug') colorStyle = 'color: #6c757d;';
+            else if (type === 'info') colorStyle = 'color: #ffffff;';
+            
+            const newLog = document.createElement('div');
+            newLog.setAttribute('style', colorStyle);
+            newLog.innerHTML = `<span style="color: #6c757d;">[${timeStr}]</span> ${message}`;
+            logConsole.appendChild(newLog);
+            logConsole.scrollTop = logConsole.scrollHeight;
+        };
+
+        const updateUIStatus = (status) => {
+            const pathRef = localStorage.getItem('local_folder_path_ref');
+            const handle = window.globalSync.dirHandle;
+            const displayName = pathRef || (handle ? handle.name : 'Carpeta Guardada');
+
+            if (status === 'disconnected') {
+                statusBadge.className = 'badge bg-secondary px-3 py-2 fw-bold text-uppercase d-flex align-items-center gap-1 shadow-sm';
+                statusBadge.innerHTML = '<i class="bi bi-cloud-slash-fill"></i> Desconectado';
+                syncDetails.classList.add('d-none');
+                btnVincular.classList.remove('d-none');
+                btnLimpiar.classList.add('d-none');
+                logContainer.classList.add('d-none');
+            } 
+            else if (status === 'needs_permission') {
+                statusBadge.className = 'badge bg-warning text-dark px-3 py-2 fw-bold text-uppercase d-flex align-items-center gap-1 shadow-sm';
+                statusBadge.innerHTML = '<i class="bi bi-exclamation-triangle-fill"></i> Requiere Autorización';
+                syncDetails.classList.remove('d-none');
+                folderNameSpan.textContent = displayName;
+                if (inputPathDisplay) inputPathDisplay.value = pathRef || '';
+                btnVincular.classList.add('d-none');
+                btnConectar.classList.remove('d-none');
+                btnLimpiar.classList.remove('d-none');
+                logContainer.classList.remove('d-none');
+            }
+            else if (status === 'syncing') {
+                statusBadge.className = 'badge bg-primary px-3 py-2 fw-bold text-uppercase d-flex align-items-center gap-1 shadow-sm';
+                statusBadge.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Sincronizando...';
+                syncDetails.classList.remove('d-none');
+                folderNameSpan.textContent = displayName;
+                if (inputPathDisplay) inputPathDisplay.value = pathRef || '';
+                btnVincular.classList.add('d-none');
+                btnConectar.classList.add('d-none');
+                btnLimpiar.classList.remove('d-none');
+                logContainer.classList.remove('d-none');
+            }
+            else if (status === 'active') {
+                statusBadge.className = 'badge bg-success px-3 py-2 fw-bold text-uppercase d-flex align-items-center gap-1 shadow-sm';
+                statusBadge.innerHTML = '<i class="bi bi-check-circle-fill animate-pulse text-warning"></i> Sincronizando en vivo';
+                syncDetails.classList.remove('d-none');
+                folderNameSpan.textContent = displayName;
+                if (inputPathDisplay) inputPathDisplay.value = pathRef || '';
+                btnVincular.classList.add('d-none');
+                btnConectar.classList.add('d-none');
+                btnLimpiar.classList.remove('d-none');
+                logContainer.classList.remove('d-none');
+            }
+            else if (status === 'compat') {
+                statusBadge.className = 'badge bg-info text-dark px-3 py-2 fw-bold text-uppercase d-flex align-items-center gap-1 shadow-sm';
+                statusBadge.innerHTML = '<i class="bi bi-info-circle-fill"></i> Modo Compatibilidad';
+                syncDetails.classList.remove('d-none');
+                folderNameSpan.textContent = displayName || 'Ninguna carpeta seleccionada';
+                if (inputPathDisplay) inputPathDisplay.value = pathRef || '';
+                btnVincular.classList.add('d-none');
+                btnConectar.classList.add('d-none');
+                btnLimpiar.classList.remove('d-none');
+                logContainer.classList.remove('d-none');
+            }
+        };
+
+        const scanCompatDirectory = async (files) => {
+            if (!files || files.length === 0 || isScanning) return;
+            isScanning = true;
+            updateUIStatus('syncing');
+            
+            try {
+                let filesUploaded = 0;
+                const currentScanKeys = new Set();
+                
+                if (files[0] && files[0].webkitRelativePath) {
+                    const parts = files[0].webkitRelativePath.split('/');
+                    if (parts.length > 0 && parts[0]) {
+                        const folderName = parts[0];
+                        addLog(`Escaneando carpeta: <strong>${folderName}</strong> (Modo Compatibilidad)`, 'system');
+                        if (!localStorage.getItem('local_folder_path_ref')) {
+                            folderNameSpan.textContent = folderName;
+                        }
+                    }
+                }
+                
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    if (ext === 'pdf' || ext === 'xml') {
+                        const key = `synced_${file.name}_${file.size}_${file.lastModified}`;
+                        currentScanKeys.add(key);
+                        
+                        if (!localStorage.getItem(key)) {
+                            addLog(`Detectado nuevo archivo local: <strong>${file.name}</strong> (${(file.size/1024).toFixed(1)} KB). Subiendo...`, 'info');
+                            
+                            const res = await window.globalSync.uploadFile(file);
+                            if (res.exito) {
+                                localStorage.setItem(key, 'true');
+                                filesUploaded++;
+                                window.globalSync.processedCount++;
+                                localStorage.setItem('sync_processed_count', window.globalSync.processedCount);
+                                updateProcessedBadge();
+                                addLog(`Archivo subido exitosamente: <strong>${file.name}</strong>`, 'success');
+                                window.mostrarNotificacion(res.mensaje, 'success');
+                            } else {
+                                addLog(`Fallo al subir: <strong>${file.name}</strong>. Motivo: ${res.mensaje}`, 'error');
+                                window.mostrarNotificacion(res.mensaje, 'danger');
+                            }
+                        }
+                    }
+                }
+                
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('synced_') && !currentScanKeys.has(key)) {
+                        localStorage.removeItem(key);
+                    }
+                });
+                
+                addLog(`Ciclo de compatibilidad completado. Se subieron ${filesUploaded} archivos nuevos.`, 'system');
+                
+                if (filesUploaded > 0 && window.pollSharedFolderGlobal) {
+                    window.pollSharedFolderGlobal();
+                }
+                
+                updateUIStatus('compat');
+            } catch (err) {
+                console.error("Error al escanear en modo compatibilidad:", err);
+                addLog(`Error al escanear: ${err.message}`, 'error');
+                updateUIStatus('compat');
+            } finally {
+                isScanning = false;
+                if (inputCompat) inputCompat.value = '';
+            }
+        };
+
+        window.addEventListener('syncStatusChanged', (e) => {
+            updateUIStatus(e.detail.status);
+            updateProcessedBadge();
+        });
+
+        window.addEventListener('syncLogAdded', (e) => {
+            addLog(e.detail.msg, e.detail.type);
+        });
+
+        if (btnGuardarRuta) {
+            btnGuardarRuta.addEventListener('click', () => {
+                const value = inputPathDisplay.value.trim();
+                if (value) {
+                    localStorage.setItem('local_folder_path_ref', value);
+                    addLog(`Ruta local de referencia guardada: <strong>${value}</strong>`, 'system');
+                    folderNameSpan.textContent = value;
+                } else {
+                    localStorage.removeItem('local_folder_path_ref');
+                    const handle = window.globalSync.dirHandle;
+                    const displayName = handle ? handle.name : 'Carpeta Guardada';
+                    folderNameSpan.textContent = displayName;
+                    addLog(`Ruta de referencia eliminada. Mostrando nombre de carpeta: <strong>${displayName}</strong>`, 'system');
+                }
+            });
+        }
+
+        btnLimpiar.addEventListener('click', () => {
+            if (confirm('¿Desea limpiar el historial local de sincronización? Los archivos en la carpeta se volverán a evaluar y subir si no están en el servidor.')) {
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('synced_')) {
+                        localStorage.removeItem(key);
+                    }
+                });
+                window.globalSync.processedCount = 0;
+                localStorage.setItem('sync_processed_count', 0);
+                updateProcessedBadge();
+                addLog(`Historial de sincronización limpiado.`, 'system');
+                if ('showDirectoryPicker' in window) {
+                    window.globalSync.scanDirectory();
+                } else if (inputCompat && inputCompat.files && inputCompat.files.length > 0) {
+                    scanCompatDirectory(inputCompat.files);
+                }
+            }
+        });
+
+        if (!('showDirectoryPicker' in window)) {
+            unsupportedAlert.classList.remove('d-none');
+            btnVincular.classList.add('d-none');
+            if (btnEscanearCompat) {
+                btnEscanearCompat.classList.remove('d-none');
+            }
+            updateUIStatus('compat');
+
+            if (btnEscanearCompat && inputCompat) {
+                btnEscanearCompat.addEventListener('click', () => {
+                    inputCompat.click();
+                });
+
+                inputCompat.addEventListener('change', (e) => {
+                    scanCompatDirectory(e.target.files);
+                });
+            }
+        } else {
+            updateUIStatus(window.globalSync.status);
+            if (window.globalSync.dirHandle) {
+                addLog(`Carpeta guardada encontrada: <strong>${window.globalSync.dirHandle.name}</strong>.`, 'system');
+                if (window.globalSync.status === 'needs_permission') {
+                    addLog(`Requiere autorización del usuario para iniciar la sincronización.`, 'warning');
+                } else if (window.globalSync.status === 'active') {
+                    addLog(`Sincronización activa en segundo plano.`, 'success');
+                }
+            }
+
+            btnVincular.addEventListener('click', async () => {
+                try {
+                    const handle = await window.showDirectoryPicker();
+                    logConsole.innerHTML = '';
+                    addLog(`Carpeta vinculada correctamente: <strong>${handle.name}</strong>`, 'success');
+                    await window.globalSync.start(handle);
+                } catch (err) {
+                    console.error("Error o cancelación del picker:", err);
+                    if (err.name !== 'AbortError') {
+                        addLog(`Error al seleccionar la carpeta: ${err.message}`, 'error');
+                    }
+                }
+            });
+
+            btnConectar.addEventListener('click', async () => {
+                const handle = window.globalSync.dirHandle;
+                if (!handle) return;
+                try {
+                    const hasPerm = await handle.requestPermission({ mode: 'read' }) === 'granted';
+                    if (hasPerm) {
+                        addLog(`Acceso autorizado para <strong>${handle.name}</strong>. Iniciando escaneo.`, 'success');
+                        await window.globalSync.start(handle);
+                    } else {
+                        addLog(`Autorización denegada por el usuario.`, 'warning');
+                    }
+                } catch (err) {
+                    console.error("Error al solicitar permisos:", err);
+                    addLog(`Error al solicitar permisos: ${err.message}`, 'error');
+                }
+            });
+
+            btnDesvincular.addEventListener('click', async () => {
+                if (confirm('¿Está seguro de que desea desvincular esta carpeta? Se detendrá la sincronización automática.')) {
+                    await window.globalSync.stop();
+                    localStorage.removeItem('local_folder_path_ref');
+                    addLog(`Carpeta desvinculada por el usuario. Sincronizador inactivo.`, 'system');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
+

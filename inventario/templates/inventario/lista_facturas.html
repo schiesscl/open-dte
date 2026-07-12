@@ -1,0 +1,571 @@
+{% extends 'inventario/base.html' %}
+{% load custom_filters %}
+
+{% block title %}Registro de Ventas - OpenDTE{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="text-fs-grey fw-bold">
+    <i class="bi bi-receipt text-fs-yellow"></i> Registro de Documentos de Venta
+  </h2>
+  <button
+    type="button"
+    class="btn btn-fs-yellow shadow-sm"
+    data-bs-toggle="modal"
+    data-bs-target="#modalSubirArchivo"
+  >
+    <i class="bi bi-cloud-arrow-up-fill"></i> Procesar nuevo documento de venta
+  </button>
+</div>
+
+<!-- Pestañas de Documentos -->
+<ul class="nav nav-tabs mb-4" id="docTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active fw-bold text-fs-grey" id="facturas-tab" data-bs-toggle="tab" data-bs-target="#facturas-pane" type="button" role="tab" aria-controls="facturas-pane" aria-selected="true">
+      <i class="bi bi-receipt text-primary me-1"></i> Facturas
+      <span class="badge bg-secondary ms-1">{{ facturas|length }}</span>
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link fw-bold text-fs-grey" id="guias-tab" data-bs-toggle="tab" data-bs-target="#guias-pane" type="button" role="tab" aria-controls="guias-pane" aria-selected="false">
+      <i class="bi bi-file-earmark-text text-success me-1"></i> Guías de despacho
+      <span class="badge bg-secondary ms-1">{{ guias|length }}</span>
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link fw-bold text-fs-grey" id="notas-tab" data-bs-toggle="tab" data-bs-target="#notas-pane" type="button" role="tab" aria-controls="notas-pane" aria-selected="false">
+      <i class="bi bi-file-earmark-minus text-danger me-1"></i> Notas de crédito
+      <span class="badge bg-secondary ms-1">{{ notas|length }}</span>
+    </button>
+  </li>
+</ul>
+
+<div class="tab-content" id="docTabsContent">
+  <!-- PESTAÑA FACTURAS -->
+  <div class="tab-pane fade show active" id="facturas-pane" role="tabpanel" aria-labelledby="facturas-tab" tabindex="0">
+    <!-- Filtros de Estado para Facturas -->
+    <div class="mb-3">
+      <div class="btn-group" role="group">
+        <a href="?estado=PENDIENTE" class="btn btn-outline-primary {% if estado_filtro == 'PENDIENTE' %}active{% endif %}">
+          <i class="bi bi-hourglass-split"></i> Pendientes
+        </a>
+        <a href="?estado=DESPACHADO" class="btn btn-outline-success {% if estado_filtro == 'DESPACHADO' %}active{% endif %}">
+          <i class="bi bi-box-seam-fill"></i> Despachadas
+        </a>
+        <a href="?estado=TODAS" class="btn btn-outline-secondary {% if estado_filtro == 'TODAS' %}active{% endif %}">
+          <i class="bi bi-list"></i> Todas
+        </a>
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr class="table-light">
+                <th class="sortable ps-4 text-primary" data-sort="numero" style="cursor: pointer; user-select: none;">
+                  Nº Factura <i class="bi bi-arrow-down-up ms-1 text-muted fs-6"></i>
+                </th>
+                <th class="sortable text-primary" data-sort="cliente" style="cursor: pointer; user-select: none;">
+                  Cliente <i class="bi bi-arrow-down-up ms-1 text-muted fs-6"></i>
+                </th>
+                <th class="sortable text-primary" data-sort="fecha" style="cursor: pointer; user-select: none;">
+                  Fecha Emisión <i class="bi bi-arrow-down-up ms-1 text-muted fs-6"></i>
+                </th>
+                <th class="sortable text-primary" data-sort="total" style="cursor: pointer; user-select: none;">
+                  Total <i class="bi bi-arrow-down-up ms-1 text-muted fs-6"></i>
+                </th>
+                <th>Estado</th>
+                <th class="text-center pe-4">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for f in facturas %}
+              <tr>
+                <td class="ps-4" data-numero="{{ f.numero }}"><strong>#{{ f.numero }}</strong></td>
+                <td data-cliente="{{ f.cliente.razon_social|default:'Desconocido' }}">{{ f.cliente.razon_social|default:'Desconocido' }}</td>
+                <td data-fecha="{{ f.fecha_emision|date:'Y-m-d' }}">{{ f.fecha_emision|date:"d/m/Y" }}</td>
+                <td data-total="{{ f.total }}" class="fw-bold text-success">${{ f.total|price_format }}</td>
+                <td>
+                  {% if f.estado_despacho == 'PENDIENTE' %}
+                    <span class="badge bg-warning text-dark">
+                      <i class="bi bi-hourglass-split"></i> Pendiente
+                    </span>
+                  {% elif f.estado_despacho == 'DESPACHADO' %}
+                    <span class="badge bg-success">
+                      <i class="bi bi-check-circle"></i> Despachada
+                    </span>
+                  {% endif %}
+                </td>
+                <td class="text-center pe-4" style="white-space: nowrap">
+                  <button
+                    class="btn btn-sm btn-outline-info"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalVerFact{{ f.id }}"
+                    title="Ver detalles"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <a
+                    href="{% url 'editar_factura' f.id %}"
+                    class="btn btn-sm btn-outline-secondary"
+                    title="Editar"
+                    ><i class="bi bi-pencil"></i
+                  ></a>
+                  <form action="{% url 'eliminar_factura' f.id %}" method="POST" class="d-inline" onsubmit="return confirm('¿Seguro que deseas eliminar la Factura #{{ f.numero }}? Se ajustará el stock de los productos.');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-danger ms-1" title="Eliminar Factura">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                  </form>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-4 text-muted">No hay facturas registradas.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PESTAÑA GUÍAS DE DESPACHO -->
+  <div class="tab-pane fade" id="guias-pane" role="tabpanel" aria-labelledby="guias-tab" tabindex="0">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr class="table-light">
+                <th class="sortable ps-4 text-primary" data-sort="numero" style="cursor: pointer; user-select: none;">
+                  Nº Guía <i class="bi bi-arrow-down-up ms-1 text-muted fs-6"></i>
+                </th>
+                <th class="sortable text-primary" data-sort="cliente" style="cursor: pointer; user-select: none;">
+                  Cliente <i class="bi bi-arrow-down-up ms-1 text-muted fs-6"></i>
+                </th>
+                <th class="sortable text-primary" data-sort="fecha" style="cursor: pointer; user-select: none;">
+                  Fecha Emisión <i class="bi bi-arrow-down-up ms-1 text-muted fs-6"></i>
+                </th>
+                <th class="sortable text-primary" data-sort="total" style="cursor: pointer; user-select: none;">
+                  Total <i class="bi bi-arrow-down-up ms-1 text-muted fs-6"></i>
+                </th>
+                <th>Estado</th>
+                <th class="text-center pe-4">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for g in guias %}
+              <tr>
+                <td class="ps-4" data-numero="{{ g.numero }}"><strong>#{{ g.numero }}</strong></td>
+                <td data-cliente="{{ g.cliente.razon_social|default:'Desconocido' }}">{{ g.cliente.razon_social|default:'Desconocido' }}</td>
+                <td data-fecha="{{ g.fecha_emision|date:'Y-m-d' }}">{{ g.fecha_emision|date:"d/m/Y" }}</td>
+                <td data-total="{{ g.total }}" class="fw-bold text-success">${{ g.total|price_format }}</td>
+                <td>
+                  {% if g.estado_despacho == 'PENDIENTE' %}
+                    <span class="badge bg-warning text-dark">
+                      <i class="bi bi-hourglass-split"></i> Pendiente
+                    </span>
+                  {% elif g.estado_despacho == 'DESPACHADO' %}
+                    <span class="badge bg-success">
+                      <i class="bi bi-check-circle"></i> Despachada
+                    </span>
+                  {% endif %}
+                </td>
+                <td class="text-center pe-4" style="white-space: nowrap">
+                  <button
+                    class="btn btn-sm btn-outline-info"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalVerFact{{ g.id }}"
+                    title="Ver detalles"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <a
+                    href="{% url 'editar_factura' g.id %}"
+                    class="btn btn-sm btn-outline-secondary"
+                    title="Editar"
+                    ><i class="bi bi-pencil"></i
+                  ></a>
+                  <form action="{% url 'eliminar_factura' g.id %}" method="POST" class="d-inline" onsubmit="return confirm('¿Seguro que deseas eliminar la Guía de Despacho #{{ g.numero }}? Se ajustará el stock de los productos.');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-danger ms-1" title="Eliminar Guía">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                  </form>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-4 text-muted">No hay guías de despacho registradas.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- PESTAÑA NOTAS DE CRÉDITO -->
+  <div class="tab-pane fade" id="notas-pane" role="tabpanel" aria-labelledby="notas-tab" tabindex="0">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr class="table-light">
+                <th class="sortable ps-4 text-primary" data-sort="numero" style="cursor: pointer; user-select: none;">
+                  Nº Nota <i class="bi bi-arrow-down-up ms-1 text-muted fs-6"></i>
+                </th>
+                <th class="sortable text-primary" data-sort="cliente" style="cursor: pointer; user-select: none;">
+                  Cliente <i class="bi bi-arrow-down-up ms-1 text-muted fs-6"></i>
+                </th>
+                <th class="sortable text-primary" data-sort="fecha" style="cursor: pointer; user-select: none;">
+                  Fecha Emisión <i class="bi bi-arrow-down-up ms-1 text-muted fs-6"></i>
+                </th>
+                <th class="sortable text-primary" data-sort="total" style="cursor: pointer; user-select: none;">
+                  Total <i class="bi bi-arrow-down-up ms-1 text-muted fs-6"></i>
+                </th>
+                <th>Estado</th>
+                <th class="text-center pe-4">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for n in notas %}
+              <tr>
+                <td class="ps-4" data-numero="{{ n.numero }}"><strong>#{{ n.numero }}</strong></td>
+                <td data-cliente="{{ n.cliente.razon_social|default:'Desconocido' }}">{{ n.cliente.razon_social|default:'Desconocido' }}</td>
+                <td data-fecha="{{ n.fecha_emision|date:'Y-m-d' }}">{{ n.fecha_emision|date:"d/m/Y" }}</td>
+                <td data-total="{{ n.total }}" class="fw-bold text-danger">-${{ n.total|price_format }}</td>
+                <td>
+                  {% if n.estado_despacho == 'PENDIENTE' %}
+                    <span class="badge bg-warning text-dark">
+                      <i class="bi bi-hourglass-split"></i> Pendiente
+                    </span>
+                  {% elif n.estado_despacho == 'DESPACHADO' %}
+                    <span class="badge bg-success">
+                      <i class="bi bi-check-circle"></i> Procesada
+                    </span>
+                  {% endif %}
+                </td>
+                <td class="text-center pe-4" style="white-space: nowrap">
+                  <button
+                    class="btn btn-sm btn-outline-info"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalVerFact{{ n.id }}"
+                    title="Ver detalles"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <a
+                    href="{% url 'editar_factura' n.id %}"
+                    class="btn btn-sm btn-outline-secondary"
+                    title="Editar"
+                  >
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <form action="{% url 'eliminar_factura' n.id %}" method="POST" class="d-inline" onsubmit="return confirm('¿Seguro que deseas eliminar la Nota de Crédito #{{ n.numero }}?');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-danger ms-1" title="Eliminar">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                  </form>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-4 text-muted">No hay notas de crédito registradas.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALES VER DETALLES (FACTURAS) -->
+{% for f in facturas %}
+<div class="modal fade" id="modalVerFact{{ f.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-receipt"></i> Factura Nº {{ f.numero }}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <p><strong>Cliente:</strong> {{ f.cliente.razon_social|default:'Desconocido' }}</p>
+            <p><strong>RUT:</strong> {{ f.cliente.rut }}</p>
+          </div>
+          <div class="col-md-6">
+            <p><strong>Fecha Emisión:</strong> {{ f.fecha_emision|date:"d/m/Y" }}</p>
+            <p><strong>Fecha Ingreso:</strong> {{ f.fecha_subida|date:"d/m/Y H:i" }}</p>
+          </div>
+        </div>
+        <hr />
+        <h6 class="mb-3"><strong>Detalles de Productos</strong></h6>
+        {% if f.detalles.all %}
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead class="table-light">
+              <tr>
+                <th>Código</th>
+                <th>Producto</th>
+                <th class="text-end">Cantidad</th>
+                <th class="text-end">P. Unit.</th>
+                <th class="text-end">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in f.detalles.all %}
+              <tr>
+                <td><strong>{{ d.producto.codigo }}</strong></td>
+                <td>{{ d.producto.descripcion }}</td>
+                <td class="text-end">{{ d.cantidad }}</td>
+                <td class="text-end">${{ d.precio_unitario|price_format }}</td>
+                <td class="text-end fw-bold">${{ d.total_linea|price_format }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-muted text-center">Sin detalles de productos.</p>
+        {% endif %}
+        <hr />
+        <div class="row text-end fw-bold">
+          <div class="col-6">Neto:</div>
+          <div class="col-6">${{ f.neto|price_format }}</div>
+        </div>
+        <div class="row text-end fw-bold">
+          <div class="col-6">IVA (19%):</div>
+          <div class="col-6">${{ f.iva|price_format }}</div>
+        </div>
+        <div class="row text-end fw-bold text-primary">
+          <div class="col-6">Total:</div>
+          <div class="col-6 fs-5">${{ f.total|price_format }}</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<!-- MODALES VER DETALLES (GUÍAS) -->
+{% for g in guias %}
+<div class="modal fade" id="modalVerFact{{ g.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-file-earmark-text"></i> Guía de Despacho Nº {{ g.numero }}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <p><strong>Cliente:</strong> {{ g.cliente.razon_social|default:'Desconocido' }}</p>
+            <p><strong>RUT:</strong> {{ g.cliente.rut }}</p>
+          </div>
+          <div class="col-md-6">
+            <p><strong>Fecha Emisión:</strong> {{ g.fecha_emision|date:"d/m/Y" }}</p>
+            <p><strong>Fecha Ingreso:</strong> {{ g.fecha_subida|date:"d/m/Y H:i" }}</p>
+          </div>
+        </div>
+        <hr />
+        <h6 class="mb-3"><strong>Detalles de Productos</strong></h6>
+        {% if g.detalles.all %}
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead class="table-light">
+              <tr>
+                <th>Código</th>
+                <th>Producto</th>
+                <th class="text-end">Cantidad</th>
+                <th class="text-end">P. Unit.</th>
+                <th class="text-end">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in g.detalles.all %}
+              <tr>
+                <td><strong>{{ d.producto.codigo }}</strong></td>
+                <td>{{ d.producto.descripcion }}</td>
+                <td class="text-end">{{ d.cantidad }}</td>
+                <td class="text-end">${{ d.precio_unitario|price_format }}</td>
+                <td class="text-end fw-bold">${{ d.total_linea|price_format }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-muted text-center">Sin detalles de productos.</p>
+        {% endif %}
+        <hr />
+        <div class="row text-end fw-bold">
+          <div class="col-6">Neto:</div>
+          <div class="col-6">${{ g.neto|price_format }}</div>
+        </div>
+        <div class="row text-end fw-bold">
+          <div class="col-6">IVA (19%):</div>
+          <div class="col-6">${{ g.iva|price_format }}</div>
+        </div>
+        <div class="row text-end fw-bold text-success">
+          <div class="col-6">Total:</div>
+          <div class="col-6 fs-5">${{ g.total|price_format }}</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<!-- MODALES VER DETALLES (NOTAS) -->
+{% for n in notas %}
+<div class="modal fade" id="modalVerFact{{ n.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-file-earmark-minus"></i> Nota de Crédito Nº {{ n.numero }}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <p><strong>Cliente:</strong> {{ n.cliente.razon_social|default:'Desconocido' }}</p>
+            <p><strong>RUT:</strong> {{ n.cliente.rut }}</p>
+          </div>
+          <div class="col-md-6">
+            <p><strong>Fecha Emisión:</strong> {{ n.fecha_emision|date:"d/m/Y" }}</p>
+            <p><strong>Fecha Ingreso:</strong> {{ n.fecha_subida|date:"d/m/Y H:i" }}</p>
+          </div>
+        </div>
+        <hr />
+        <h6 class="mb-3"><strong>Detalles de Productos</strong></h6>
+        {% if n.detalles.all %}
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead class="table-light">
+              <tr>
+                <th>Código</th>
+                <th>Producto</th>
+                <th class="text-end">Cantidad</th>
+                <th class="text-end">P. Unit.</th>
+                <th class="text-end">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in n.detalles.all %}
+              <tr>
+                <td><strong>{{ d.producto.codigo }}</strong></td>
+                <td>{{ d.producto.descripcion }}</td>
+                <td class="text-end">{{ d.cantidad }}</td>
+                <td class="text-end">${{ d.precio_unitario|price_format }}</td>
+                <td class="text-end fw-bold">${{ d.total_linea|price_format }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-muted text-center">Sin detalles de productos.</p>
+        {% endif %}
+        <hr />
+        <div class="row text-end fw-bold">
+          <div class="col-6">Neto:</div>
+          <div class="col-6">${{ n.neto|price_format }}</div>
+        </div>
+        <div class="row text-end fw-bold">
+          <div class="col-6">IVA (19%):</div>
+          <div class="col-6">${{ n.iva|price_format }}</div>
+        </div>
+        <div class="row text-end fw-bold text-danger">
+          <div class="col-6">Total:</div>
+          <div class="col-6 fs-5">-${{ n.total|price_format }}</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<!-- LÓGICA DE ORDENAMIENTO JS -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('th.sortable').forEach(header => {
+        header.addEventListener('click', () => {
+            const table = header.closest('table');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Si la tabla está vacía, no hacer nada
+            if (rows.length === 1 && rows[0].querySelector('td[colspan]')) {
+                return;
+            }
+            
+            const sortType = header.dataset.sort;
+            const isAsc = header.dataset.dir !== 'asc';
+            
+            // Limpiar direcciones de ordenamiento en otros encabezados de la misma tabla
+            table.querySelectorAll('th.sortable').forEach(h => {
+                if (h !== header) {
+                    delete h.dataset.dir;
+                    const icon = h.querySelector('i');
+                    if (icon) icon.className = 'bi bi-arrow-down-up ms-1 text-muted fs-6';
+                }
+            });
+            
+            // Establecer dirección del encabezado seleccionado
+            header.dataset.dir = isAsc ? 'asc' : 'desc';
+            const icon = header.querySelector('i');
+            if (icon) {
+                icon.className = isAsc ? 'bi bi-sort-up ms-1 text-primary fs-6' : 'bi bi-sort-down ms-1 text-primary fs-6';
+            }
+            
+            rows.sort((rowA, rowB) => {
+                let cellA = rowA.querySelector(`[data-${sortType}]`);
+                let cellB = rowB.querySelector(`[data-${sortType}]`);
+                
+                if (!cellA || !cellB) return 0;
+                
+                let valA = cellA.getAttribute(`data-${sortType}`);
+                let valB = cellB.getAttribute(`data-${sortType}`);
+                
+                if (sortType === 'numero' || sortType === 'total') {
+                    return (parseFloat(valA) - parseFloat(valB)) * (isAsc ? 1 : -1);
+                } else if (sortType === 'fecha') {
+                    return valA.localeCompare(valB) * (isAsc ? 1 : -1);
+                } else {
+                    // Texto (Cliente)
+                    return valA.localeCompare(valB, 'es', { sensitivity: 'base' }) * (isAsc ? 1 : -1);
+                }
+            });
+            
+            rows.forEach(row => tbody.appendChild(row));
+        });
+    });
+});
+</script>
+{% endblock %}

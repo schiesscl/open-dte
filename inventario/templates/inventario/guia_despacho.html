@@ -1,0 +1,210 @@
+{% load static %}
+{% load custom_filters %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía de Despacho N° {{ despacho.id }} - Full Sello</title>
+    <!-- Incluir Bootstrap desde local -->
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/bootstrap-icons.css' %}">
+    
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+            color: #000;
+        }
+        .page {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            padding: 40px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        /* Contenedor Rojo del RUT / Guía */
+        .caja-roja {
+            border: 3px solid #ff0000;
+            color: #ff0000;
+            text-align: center;
+            padding: 15px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+        }
+        .caja-roja h4 {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .caja-roja h5 {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        /* Estilos de bordes y separadores */
+        .info-cliente {
+            border: 1px solid #333;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+
+        .tabla-productos th {
+            background-color: #f8f9fa !important;
+            border-bottom: 2px solid #333;
+        }
+        .tabla-productos td {
+            border-bottom: 1px solid #ddd;
+        }
+
+        /* Timbre Electrónico simulado */
+        .timbre-container {
+            width: 300px;
+            margin: 30px auto 0 auto;
+            text-align: center;
+            font-size: 0.75rem;
+        }
+        .barcode {
+            width: 100%;
+            height: 90px;
+            background: repeating-linear-gradient(
+                90deg,
+                #000,
+                #000 2px,
+                #fff 2px,
+                #fff 5px,
+                #000 5px,
+                #000 8px,
+                #fff 8px,
+                #fff 10px
+            );
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+        }
+
+        @media print {
+            body { background: white; margin: 0; padding: 0; }
+            .page { max-width: 100%; margin: 0; padding: 0; box-shadow: none; border: none; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container no-print mb-4 mt-4 text-center">
+    <button onclick="window.print()" class="btn btn-primary me-2"><i class="bi bi-printer"></i> Imprimir Guía</button>
+    <button onclick="window.close()" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> Cerrar</button>
+</div>
+
+<div class="page">
+    
+    <!-- Encabezado: Info Empresa y Caja Roja -->
+    <div class="row mb-3">
+        <div class="col-7">
+            <h3 class="text-primary fw-bold" style="color: #0d6efd !important;">COMERCIAL FULL-SELLO LTDA.</h3>
+            <p class="mb-1 fw-bold">GIRO: Venta de Insumos y Artículos de Embalaje</p>
+            <p class="mb-1">DIRECCIÓN: Calle Ficticia 1234, Santiago</p>
+            <p class="mb-1">TELÉFONO: +56 2 2123 4567</p>
+            <p class="mb-0">EMAIL: ventas@opendte.cl</p>
+        </div>
+        <div class="col-5">
+            <div class="caja-roja">
+                <h4>R.U.T.: 76.543.210-K</h4>
+                <div class="mt-2 mb-2 p-1" style="border-top: 2px solid red; border-bottom: 2px solid red;">
+                    GUÍA DE DESPACHO<br>ELECTRÓNICA
+                </div>
+                <h5>N° {{ despacho.id|stringformat:"06d" }}</h5>
+            </div>
+            <div class="text-center mt-2 fw-bold text-danger">
+                S.I.I. - SANTIAGO CENTRO
+            </div>
+        </div>
+    </div>
+
+    <!-- Info del Cliente -->
+    <div class="info-cliente">
+        <div class="row">
+            <div class="col-8">
+                <p class="mb-1"><strong>SEÑOR(ES):</strong> {{ factura.cliente.razon_social }}</p>
+                <p class="mb-1"><strong>DIRECCIÓN:</strong> {{ factura.cliente.direccion }}, {{ factura.cliente.comuna }}, {{ factura.cliente.ciudad }}</p>
+                <p class="mb-1"><strong>GIRO:</strong> {{ factura.cliente.giro|default:"No especificado" }}</p>
+                <p class="mb-0"><strong>REF. FACTURA:</strong> N° {{ factura.numero }}</p>
+            </div>
+            <div class="col-4">
+                <p class="mb-1"><strong>R.U.T.:</strong> {{ factura.cliente.rut }}</p>
+                <p class="mb-1"><strong>FECHA:</strong> {{ despacho.fecha_despacho|date:"d" }} de {{ despacho.fecha_despacho|date:"F" }} de {{ despacho.fecha_despacho|date:"Y" }}</p>
+                <p class="mb-0"><strong>DESPACHO POR:</strong> {% if despacho.usuario %}{{ despacho.usuario.get_full_name|default:despacho.usuario.username }}{% else %}No especificado{% endif %}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla Detalle -->
+    <div class="mt-4">
+        <table class="table tabla-productos table-borderless">
+            <thead>
+                <tr>
+                    <th>CÓDIGO</th>
+                    <th>DESCRIPCIÓN</th>
+                    <th class="text-center">CANTIDAD</th>
+                    <th class="text-end">PRECIO</th>
+                    <th class="text-end">TOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in detalles %}
+                <tr>
+                    <td>{{ item.producto.codigo }}</td>
+                    <td>{{ item.producto.descripcion }}</td>
+                    <td class="text-center">{{ item.cantidad }} {{ item.producto.unidad_medida }}</td>
+                    <td class="text-end">${{ item.precio_unitario|price_format }}</td>
+                    <td class="text-end fw-bold">${{ item.total_linea|price_format }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-3">Sin productos registrados en la factura.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Totales -->
+    <div class="row mt-4">
+        <div class="col-7">
+            <!-- Timbre Electrónico simulación -->
+            <div class="timbre-container">
+                <div class="barcode"></div>
+                <strong>Timbre Electrónico S.I.I.</strong><br>
+                Res. 99 de 2014 - Verifique documento en www.sii.cl
+            </div>
+        </div>
+        <div class="col-5">
+            <table class="table table-bordered border-dark" style="border: 2px solid #333;">
+                <tbody>
+                    <tr>
+                        <td class="fw-bold bg-light">MONTO NETO $</td>
+                        <td class="text-end fw-bold">{{ factura.neto|price_format }}</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold bg-light">I.V.A (19%) $</td>
+                        <td class="text-end fw-bold">{{ factura.iva|price_format }}</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold bg-light fs-5">TOTAL $</td>
+                        <td class="text-end fw-bold fs-5">{{ factura.total|price_format }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="border p-2 mt-4 text-center" style="font-size: 0.85rem;">
+                <strong>ACUSE DE RECIBO</strong><br><br>
+                ______________________________________<br>
+                Nombre, Rut y Firma
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

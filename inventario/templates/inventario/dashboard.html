@@ -1,0 +1,505 @@
+{% extends 'inventario/base.html' %}
+{% load custom_filters %}
+
+{% block title %}Dashboard - OpenDTE{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-fs-grey fw-bold"><i class="bi bi-bar-chart-fill text-fs-yellow"></i> Resumen de Operaciones</h2>
+    <button type="button" class="btn btn-fs-yellow shadow-sm" data-bs-toggle="modal" data-bs-target="#modalSubirArchivo">
+        <i class="bi bi-plus-circle"></i> Nueva Factura
+    </button>
+</div>
+<!-- Filtros por Período de Tiempo -->
+<div class="card shadow-sm border-0 mb-4 bg-light">
+    <div class="card-body py-3">
+        <form method="GET" action="{% url 'dashboard' %}" class="row align-items-end g-3" id="form-filtros-tiempo">
+            <!-- Selector de Período -->
+            <div class="col-md-3">
+                <label for="periodo" class="form-label fw-bold text-fs-grey mb-1"><i class="bi bi-calendar3 text-fs-yellow"></i> Período de Visualización</label>
+                <select class="form-select" id="periodo" name="periodo" onchange="toggleFilterInputs()">
+                    <option value="mes_actual" {% if periodo_activo == 'mes_actual' %}selected{% endif %}>Mes Actual</option>
+                    <option value="semana_actual" {% if periodo_activo == 'semana_actual' %}selected{% endif %}>Semana Actual</option>
+                    <option value="anio_actual" {% if periodo_activo == 'anio_actual' %}selected{% endif %}>Año Actual</option>
+                    <option value="mes_especifico" {% if periodo_activo == 'mes_especifico' %}selected{% endif %}>Mes Específico</option>
+                    <option value="anio_especifico" {% if periodo_activo == 'anio_especifico' %}selected{% endif %}>Año Específico</option>
+                    <option value="relativo" {% if periodo_activo == 'relativo' %}selected{% endif %}>Rango Relativo (Últimos X...)</option>
+                    <option value="personalizado" {% if periodo_activo == 'personalizado' %}selected{% endif %}>Rango de Fechas Personalizado</option>
+                </select>
+            </div>
+
+            <!-- Inputs dinámicos para Mes Específico (Mes y Año) -->
+            <div class="col-md-2 filter-group" id="group-mes" style="display: none;">
+                <label for="mes" class="form-label fw-bold text-fs-grey mb-1">Mes</label>
+                <select class="form-select" id="mes" name="mes">
+                    <option value="1" {% if mes_sel == '1' %}selected{% endif %}>Enero</option>
+                    <option value="2" {% if mes_sel == '2' %}selected{% endif %}>Febrero</option>
+                    <option value="3" {% if mes_sel == '3' %}selected{% endif %}>Marzo</option>
+                    <option value="4" {% if mes_sel == '4' %}selected{% endif %}>Abril</option>
+                    <option value="5" {% if mes_sel == '5' %}selected{% endif %}>Mayo</option>
+                    <option value="6" {% if mes_sel == '6' %}selected{% endif %}>Junio</option>
+                    <option value="7" {% if mes_sel == '7' %}selected{% endif %}>Julio</option>
+                    <option value="8" {% if mes_sel == '8' %}selected{% endif %}>Agosto</option>
+                    <option value="9" {% if mes_sel == '9' %}selected{% endif %}>Septiembre</option>
+                    <option value="10" {% if mes_sel == '10' %}selected{% endif %}>Octubre</option>
+                    <option value="11" {% if mes_sel == '11' %}selected{% endif %}>Noviembre</option>
+                    <option value="12" {% if mes_sel == '12' %}selected{% endif %}>Diciembre</option>
+                </select>
+            </div>
+
+            <!-- Inputs dinámicos para Año Específico / Mes Específico (Año) -->
+            <div class="col-md-2 filter-group" id="group-anio" style="display: none;">
+                <label for="anio" class="form-label fw-bold text-fs-grey mb-1">Año</label>
+                <input type="number" class="form-control" id="anio" name="anio" value="{{ anio_sel|default:'2026' }}" min="2000" max="2100">
+            </div>
+
+            <!-- Inputs dinámicos para Rango Relativo (Cantidad y Unidad) -->
+            <div class="col-md-2 filter-group" id="group-relativo-cant" style="display: none;">
+                <label for="cantidad" class="form-label fw-bold text-fs-grey mb-1">Últimos (Cantidad)</label>
+                <input type="number" class="form-control" id="cantidad" name="cantidad" value="{{ cantidad_sel|default:'30' }}" min="1">
+            </div>
+            <div class="col-md-2 filter-group" id="group-relativo-unit" style="display: none;">
+                <label for="unidad" class="form-label fw-bold text-fs-grey mb-1">Unidad</label>
+                <select class="form-select" id="unidad" name="unidad">
+                    <option value="dias" {% if unidad_sel == 'dias' %}selected{% endif %}>Días</option>
+                    <option value="semanas" {% if unidad_sel == 'semanas' %}selected{% endif %}>Semanas</option>
+                    <option value="meses" {% if unidad_sel == 'meses' %}selected{% endif %}>Meses</option>
+                    <option value="anios" {% if unidad_sel == 'anios' %}selected{% endif %}>Años</option>
+                </select>
+            </div>
+
+            <!-- Inputs dinámicos para Rango Personalizado (Desde / Hasta) -->
+            <div class="col-md-2 filter-group" id="group-desde" style="display: none;">
+                <label for="desde" class="form-label fw-bold text-fs-grey mb-1">Desde</label>
+                <input type="date" class="form-control" id="desde" name="desde" value="{{ desde_sel }}">
+            </div>
+            <div class="col-md-2 filter-group" id="group-hasta" style="display: none;">
+                <label for="hasta" class="form-label fw-bold text-fs-grey mb-1">Hasta</label>
+                <input type="date" class="form-control" id="hasta" name="hasta" value="{{ hasta_sel }}">
+            </div>
+
+            <!-- Botones Filtrar y Restablecer -->
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-fs-yellow fw-bold flex-grow-1 shadow-sm"><i class="bi bi-filter"></i> Filtrar</button>
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary shadow-sm" title="Restablecer al mes actual (predeterminado)"><i class="bi bi-arrow-counterclockwise"></i></a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Banner de Rango Activo -->
+    <div class="card-footer bg-white border-top-0 py-2 d-flex justify-content-between align-items-center">
+        <span class="text-muted small">
+            <i class="bi bi-info-circle-fill text-primary"></i> 
+            Datos filtrados desde el <strong class="text-dark">{{ start_date|date:"d/m/Y" }}</strong> hasta el <strong class="text-dark">{{ end_date|date:"d/m/Y" }}</strong>.
+        </span>
+        <span class="badge bg-fs-black text-fs-yellow fs-7 px-3 py-2">
+            Período: <strong>{{ periodo_label }}</strong>
+        </span>
+    </div>
+</div>
+
+<script>
+function toggleFilterInputs() {
+    const val = document.getElementById('periodo').value;
+    
+    // Ocultar todos los grupos
+    document.querySelectorAll('.filter-group').forEach(el => el.style.display = 'none');
+    
+    if (val === 'mes_especifico') {
+        document.getElementById('group-mes').style.display = 'block';
+        document.getElementById('group-anio').style.display = 'block';
+    } else if (val === 'anio_especifico') {
+        document.getElementById('group-anio').style.display = 'block';
+    } else if (val === 'relativo') {
+        document.getElementById('group-relativo-cant').style.display = 'block';
+        document.getElementById('group-relativo-unit').style.display = 'block';
+    } else if (val === 'personalizado') {
+        document.getElementById('group-desde').style.display = 'block';
+        document.getElementById('group-hasta').style.display = 'block';
+    }
+}
+document.addEventListener('DOMContentLoaded', toggleFilterInputs);
+</script>
+
+<div class="row">
+    <!-- Tarjeta Ventas -->
+    <div class="col-sm-6 col-lg-3 mb-4">
+        <div class="card shadow-sm border-0 bg-fs-black text-white h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="me-3">
+                    <i class="bi bi-cash-stack display-4 text-fs-yellow"></i>
+                </div>
+                <div>
+                    <h5 class="card-title text-fs-grey mb-0">Ventas del Período</h5>
+                    <h2 class="mb-0">${{ total_ventas|price_format }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tarjeta Facturas -->
+    <div class="col-sm-6 col-lg-3 mb-4">
+        <div class="card shadow-sm border-0 h-100" style="background-color: var(--fs-grey); color: white;">
+            <div class="card-body d-flex align-items-center">
+                <div class="me-3">
+                    <i class="bi bi-receipt display-4 text-primary"></i>
+                </div>
+                <div>
+                    <h5 class="card-title mb-0" style="color: #d1d2d4;">Facturas Procesadas</h5>
+                    <h2 class="mb-0">{{ total_facturas }}</h2>
+                    <small class="text-muted d-block mt-1">
+                        <span class="text-success"><i class="bi bi-check-circle"></i> {{ facturas_despachadas }}</span> | 
+                        <span class="text-warning"><i class="bi bi-hourglass-split"></i> {{ facturas_pendientes }}</span>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarjeta Guías -->
+    <div class="col-sm-6 col-lg-3 mb-4">
+        <div class="card shadow-sm border-0 h-100" style="background-color: var(--fs-grey); color: white;">
+            <div class="card-body d-flex align-items-center">
+                <div class="me-3">
+                    <i class="bi bi-file-earmark-text-fill display-4 text-success"></i>
+                </div>
+                <div>
+                    <h5 class="card-title mb-0" style="color: #d1d2d4;">Guías Procesadas</h5>
+                    <h2 class="mb-0">{{ total_guias }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarjeta Notas de Crédito -->
+    <div class="col-sm-6 col-lg-3 mb-4">
+        <div class="card shadow-sm border-0 h-100" style="background-color: var(--fs-grey); color: white;">
+            <div class="card-body d-flex align-items-center">
+                <div class="me-3">
+                    <i class="bi bi-file-earmark-minus display-4 text-danger"></i>
+                </div>
+                <div>
+                    <h5 class="card-title mb-0" style="color: #d1d2d4;">Notas de Crédito</h5>
+                    <h2 class="mb-0">{{ total_notas }}</h2>
+                    <small class="text-muted d-block mt-1">
+                        <span class="text-success"><i class="bi bi-check-circle"></i> {{ notas_despachadas }}</span> | 
+                        <span class="text-warning"><i class="bi bi-hourglass-split"></i> {{ notas_pendientes }}</span>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de Últimos Movimientos -->
+<div class="card shadow-sm border-0 mt-2">
+    <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+        <h5 class="text-fs-grey fw-bold"><i class="bi bi-clock-history"></i> Últimos 10 Documentos Subidos (Histórico)</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Nº Documento</th>
+                        <th>Cliente</th>
+                        <th>Total</th>
+                        <th>Fecha</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in ultimas_facturas %}
+                    <tr>
+                        <td>
+                            {% if f.tipo_documento == 'GUIA DE DESPACHO' %}
+                                <span class="badge bg-success">Guía</span>
+                            {% elif f.tipo_documento == 'NOTA DE CREDITO' %}
+                                <span class="badge bg-danger">Nota de Crédito</span>
+                            {% else %}
+                                <span class="badge bg-primary">Factura</span>
+                            {% endif %}
+                        </td>
+                        <td><strong>#{{ f.numero }}</strong></td>
+                        <td>{{ f.cliente.razon_social }}</td>
+                        <td class="{% if f.tipo_documento == 'NOTA DE CREDITO' %}text-danger{% else %}text-success{% endif %} fw-bold">
+                            {% if f.tipo_documento == 'NOTA DE CREDITO' %}-{% endif %}${{ f.total|price_format }}
+                        </td>
+                        <td>{{ f.fecha_subida|date:"d M Y" }}</td>
+                        <td>
+                            <button
+                                class="btn btn-sm btn-outline-secondary"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalVerFactDash{{ f.id }}"
+                            >
+                                <i class="bi bi-eye"></i> Ver
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center text-muted py-4">No hay documentos registrados aún. Sube tu primer documento de venta.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if ultimas_facturas %}
+        {% for f in ultimas_facturas %}
+        <!-- MODAL VER DETALLES FACTURA (DASHBOARD) -->
+        <div
+            class="modal fade"
+            id="modalVerFactDash{{ f.id }}"
+            tabindex="-1"
+            aria-hidden="true"
+        >
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header {% if f.tipo_documento == 'GUIA DE DESPACHO' %}bg-success{% elif f.tipo_documento == 'NOTA DE CREDITO' %}bg-danger{% else %}bg-primary{% endif %} text-white">
+                        <h5 class="modal-title">
+                            {% if f.tipo_documento == 'GUIA DE DESPACHO' %}
+                                <i class="bi bi-file-earmark-text"></i> Guía de Despacho Nº {{ f.numero }}
+                            {% elif f.tipo_documento == 'NOTA DE CREDITO' %}
+                                <i class="bi bi-file-earmark-minus"></i> Nota de Crédito Nº {{ f.numero }}
+                            {% else %}
+                                <i class="bi bi-receipt"></i> Factura Nº {{ f.numero }}
+                            {% endif %}
+                        </h5>
+                        <button
+                            type="button"
+                            class="btn-close btn-close-white"
+                            data-bs-dismiss="modal"
+                        ></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p><strong>Cliente:</strong> {{ f.cliente.razon_social }}</p>
+                                <p><strong>RUT:</strong> {{ f.cliente.rut }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p>
+                                    <strong>Fecha Emisión:</strong>
+                                    {{ f.fecha_emision|date:"d/m/Y" }}
+                                </p>
+                                <p>
+                                    <strong>Fecha Ingreso:</strong>
+                                    {{ f.fecha_subida|date:"d/m/Y H:i" }}
+                                </p>
+                            </div>
+                        </div>
+                        <hr />
+                        <h6 class="mb-3"><strong>Detalles de Productos</strong></h6>
+                        {% if f.detalles.all %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Producto</th>
+                                        <th class="text-end">Cantidad</th>
+                                        <th class="text-end">P. Unit.</th>
+                                        <th class="text-end">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for d in f.detalles.all %}
+                                    <tr>
+                                        <td><strong>{{ d.producto.codigo }}</strong></td>
+                                        <td>{{ d.producto.descripcion }}</td>
+                                        <td class="text-end">{{ d.cantidad }}</td>
+                                        <td class="text-end">${{ d.precio_unitario|price_format }}</td>
+                                        <td class="text-end"><strong>${{ d.total_linea|price_format }}</strong></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-muted text-center">Sin detalles de productos.</p>
+                        {% endif %}
+                        <hr />
+                        <div class="row text-end fw-bold">
+                            <div class="col-6">Neto:</div>
+                            <div class="col-6">${{ f.neto|price_format }}</div>
+                        </div>
+                        <div class="row text-end fw-bold">
+                            <div class="col-6">IVA (19%):</div>
+                            <div class="col-6">${{ f.iva|price_format }}</div>
+                        </div>
+                        <div class="row text-end fw-bold {% if f.tipo_documento == 'GUIA DE DESPACHO' %}text-success{% elif f.tipo_documento == 'NOTA DE CREDITO' %}text-danger{% else %}text-primary{% endif %}">
+                            <div class="col-6">Total:</div>
+                            <div class="col-6 fs-5">
+                                {% if f.tipo_documento == 'NOTA DE CREDITO' %}-{% endif %}${{ f.total|price_format }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+</div>
+
+<!-- Tabla de Documentos del Período Seleccionado -->
+<div class="card shadow-sm border-0 mt-4 mb-4">
+    <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+        <h5 class="text-fs-grey fw-bold"><i class="bi bi-calendar-event text-fs-yellow"></i> Documentos del Período Seleccionado (Máx 50)</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light sticky-top" style="z-index: 1;">
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Nº Documento</th>
+                        <th>Cliente</th>
+                        <th>Total</th>
+                        <th>Fecha Emisión</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in documentos_periodo %}
+                    <tr>
+                        <td>
+                            {% if p.tipo_documento == 'GUIA DE DESPACHO' %}
+                                <span class="badge bg-success">Guía</span>
+                            {% elif p.tipo_documento == 'NOTA DE CREDITO' %}
+                                <span class="badge bg-danger">Nota de Crédito</span>
+                            {% else %}
+                                <span class="badge bg-primary">Factura</span>
+                            {% endif %}
+                        </td>
+                        <td><strong>#{{ p.numero }}</strong></td>
+                        <td>{{ p.cliente.razon_social }}</td>
+                        <td class="{% if p.tipo_documento == 'NOTA DE CREDITO' %}text-danger{% else %}text-success{% endif %} fw-bold">
+                            {% if p.tipo_documento == 'NOTA DE CREDITO' %}-{% endif %}${{ p.total|price_format }}
+                        </td>
+                        <td>{{ p.fecha_emision|date:"d M Y" }}</td>
+                        <td>
+                            <button
+                                class="btn btn-sm btn-outline-secondary"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalVerFactPeriodo{{ p.id }}"
+                            >
+                                <i class="bi bi-eye"></i> Ver
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center text-muted py-4">No hay documentos registrados para este período de tiempo.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if documentos_periodo %}
+        {% for p in documentos_periodo %}
+        <!-- MODAL VER DETALLES DOCUMENTO PERIODO -->
+        <div
+            class="modal fade"
+            id="modalVerFactPeriodo{{ p.id }}"
+            tabindex="-1"
+            aria-hidden="true"
+        >
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header {% if p.tipo_documento == 'GUIA DE DESPACHO' %}bg-success{% elif p.tipo_documento == 'NOTA DE CREDITO' %}bg-danger{% else %}bg-primary{% endif %} text-white">
+                        <h5 class="modal-title">
+                            {% if p.tipo_documento == 'GUIA DE DESPACHO' %}
+                                <i class="bi bi-file-earmark-text"></i> Guía de Despacho Nº {{ p.numero }}
+                            {% elif p.tipo_documento == 'NOTA DE CREDITO' %}
+                                <i class="bi bi-file-earmark-minus"></i> Nota de Crédito Nº {{ p.numero }}
+                            {% else %}
+                                <i class="bi bi-receipt"></i> Factura Nº {{ p.numero }}
+                            {% endif %}
+                        </h5>
+                        <button
+                            type="button"
+                            class="btn-close btn-close-white"
+                            data-bs-dismiss="modal"
+                        ></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p><strong>Cliente:</strong> {{ p.cliente.razon_social }}</p>
+                                <p><strong>RUT:</strong> {{ p.cliente.rut }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p>
+                                    <strong>Fecha Emisión:</strong>
+                                    {{ p.fecha_emision|date:"d/m/Y" }}
+                                </p>
+                                <p>
+                                    <strong>Fecha Ingreso:</strong>
+                                    {{ p.fecha_subida|date:"d/m/Y H:i" }}
+                                </p>
+                            </div>
+                        </div>
+                        <hr />
+                        <h6 class="mb-3"><strong>Detalles de Productos</strong></h6>
+                        {% if p.detalles.all %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Producto</th>
+                                        <th class="text-end">Cantidad</th>
+                                        <th class="text-end">P. Unit.</th>
+                                        <th class="text-end">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for d in p.detalles.all %}
+                                    <tr>
+                                        <td><strong>{{ d.producto.codigo }}</strong></td>
+                                        <td>{{ d.producto.descripcion }}</td>
+                                        <td class="text-end">{{ d.cantidad }}</td>
+                                        <td class="text-end">${{ d.precio_unitario|price_format }}</td>
+                                        <td class="text-end"><strong>${{ d.total_linea|price_format }}</strong></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-muted text-center">Sin detalles de productos.</p>
+                        {% endif %}
+                        <hr />
+                        <div class="row text-end fw-bold">
+                            <div class="col-6">Neto:</div>
+                            <div class="col-6">${{ p.neto|price_format }}</div>
+                        </div>
+                        <div class="row text-end fw-bold">
+                            <div class="col-6">IVA (19%):</div>
+                            <div class="col-6">${{ p.iva|price_format }}</div>
+                        </div>
+                        <div class="row text-end fw-bold {% if p.tipo_documento == 'GUIA DE DESPACHO' %}text-success{% elif p.tipo_documento == 'NOTA DE CREDITO' %}text-danger{% else %}text-primary{% endif %}">
+                            <div class="col-6">Total:</div>
+                            <div class="col-6 fs-5">
+                                {% if p.tipo_documento == 'NOTA DE CREDITO' %}-{% endif %}${{ p.total|price_format }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
