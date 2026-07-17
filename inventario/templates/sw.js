@@ -1,5 +1,5 @@
-const CACHE_NAME = "opendte-v26";
-const DYNAMIC_CACHE = "opendte-dynamic-v26";
+const CACHE_NAME = "opendte-v1";
+const DYNAMIC_CACHE = "opendte-dynamic-v1";
 const OFFLINE_URL = "/static/offline.html";
 
 // Archivos básicos para que la app cargue el layout principal sin internet

@@ -4,7 +4,7 @@ import logging
 import time
 from django.conf import settings
 from django.core.files import File
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect, get_object_or_404
@@ -35,6 +35,9 @@ def login_demo(request):
     """
     Vista de login demo que permite inicio rápido por botones o credenciales.
     """
+    if request.method == 'GET' and request.user.is_authenticated:
+        logout(request)
+        
     next_url = request.GET.get('next', '') or request.POST.get('next', '') or '/'
     
     if request.method == 'POST':

@@ -42,23 +42,30 @@
     <!-- Contenedor General de la Aplicación -->
     <div class="app-container">
 
-        <!-- Header Móvil (Solo visible en pantallas móviles/tablets < 992px) -->
-        <header class="mobile-header d-lg-none">
-            <a class="d-flex align-items-center text-decoration-none" href="{% url 'dashboard' %}">
-                <img src="{% static 'img/logo.webp' %}" alt="Logo OpenDTE" height="35" class="me-2">
+        <!-- Header Móvil (Solo visible en pantallas < 992px) -->
+        <header class="mobile-header d-lg-none d-flex justify-content-between align-items-center px-3">
+            <a href="{% url 'dashboard' %}" class="mobile-logo text-decoration-none d-flex align-items-center">
+                <span class="fs-4 fw-bold text-fs-yellow">Open<span class="text-white">DTE</span></span>
             </a>
-            <button class="btn mobile-nav-toggle" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebarMenu" aria-controls="offcanvasSidebarMenu">
-                <i class="bi bi-list fs-3"></i>
-            </button>
+            <div class="d-flex align-items-center gap-2">
+                {% if user.is_authenticated %}
+                <a href="/accounts/login/" class="btn btn-outline-danger btn-sm py-1 px-2" title="Cerrar sesión / Cambiar perfil">
+                    <i class="bi bi-box-arrow-right fs-5"></i>
+                </a>
+                {% endif %}
+                <button class="btn btn-outline-light" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebarMenu" aria-controls="offcanvasSidebarMenu">
+                    <i class="bi bi-list fs-3"></i>
+                </button>
+            </div>
         </header>
 
         <!-- Sidebar Fijo en Escritorio (Solo visible en pantallas >= 992px) -->
         <aside class="sidebar d-none d-lg-flex flex-column justify-content-between">
             <!-- Logo Header (Fijo) -->
             <div class="sidebar-header">
-                <div class="text-center py-2 border-bottom border-secondary border-opacity-25">
-                    <a href="{% url 'dashboard' %}" class="d-inline-block">
-                        <img src="{% static 'img/logo.webp' %}" alt="Logo OpenDTE" class="img-fluid px-2" style="max-height: 50px;">
+                <div class="text-center py-3 border-bottom border-secondary border-opacity-25">
+                    <a href="{% url 'dashboard' %}" class="text-decoration-none d-inline-block">
+                        <span class="fs-3 fw-bold text-fs-yellow">Open<span class="text-white">DTE</span></span>
                     </a>
                     {% if user.is_authenticated %}
                     <div class="mt-2 small text-muted">
@@ -158,10 +165,20 @@
 
         <!-- Sidebar Offcanvas para Móviles -->
         <div class="offcanvas offcanvas-start offcanvas-sidebar d-lg-none" tabindex="-1" id="offcanvasSidebarMenu" aria-labelledby="offcanvasSidebarMenuLabel">
-            <div class="offcanvas-header">
-                <h5 class="offcanvas-title text-fs-yellow fw-bold" id="offcanvasSidebarMenuLabel">
-                    <img src="{% static 'img/logo.webp' %}" alt="Logo OpenDTE" height="30" class="me-2"> Menú
+            <div class="offcanvas-header border-bottom border-secondary border-opacity-25">
+                <h5 class="offcanvas-title fw-bold" id="offcanvasSidebarMenuLabel">
+                    <span class="text-fs-yellow">Open<span class="text-white">DTE</span></span> <span class="text-muted fs-6 ms-2">Menú</span>
                 </h5>
+                {% if user.is_authenticated %}
+                <div class="ms-auto me-2 small text-muted d-flex align-items-center">
+                    <span class="badge bg-secondary px-2 py-1">
+                        {{ user.first_name }}
+                    </span>
+                    <a href="/accounts/login/" class="ms-2 text-danger text-decoration-none fs-5" title="Cerrar sesión / Cambiar perfil">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </a>
+                </div>
+                {% endif %}
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
             <div class="offcanvas-body d-flex flex-column justify-content-between p-3">
