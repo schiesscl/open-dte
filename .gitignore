@@ -67,11 +67,18 @@ venv.bak/
 .idea/
 .vscode/
 
+# Agentes de IA / skills locales
+.agents/
+.claude/
+
 # Node.js
 node_modules/
 
 # Media and Uploads
 media/
+
+# Archivos estáticos recolectados (collectstatic)
+staticfiles/
 
 # Local Configuration
 config.json
@@ -79,3 +86,7 @@ config.json
 # Logs
 logs/
 *.log
+
+.agents/
+.claude/
+.github/

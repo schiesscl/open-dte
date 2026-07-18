@@ -14,6 +14,7 @@ from django.db.models import Sum, ProtectedError
 from .models import Factura, Cliente, Producto, DetalleFactura, Despacho
 from .utils import procesar_factura_xml, procesar_factura_pdf
 from .forms import ProductoForm, ClienteForm, FacturaForm
+from .roles import bloquear_seccion
 
 logger = logging.getLogger(__name__)
 
@@ -55,16 +56,9 @@ def login_demo(request):
     return render(request, 'inventario/login.html', {'next': next_url})
 
 @login_required
+@bloquear_seccion('dashboard', "Acceso restringido: tu perfil no tiene acceso al Panel de Control.")
 def dashboard(request):
     """ Vista principal del panel de control con filtrado por período de tiempo """
-    if getattr(settings, 'MODO_DEMO', False):
-        if request.user.username == 'vendedor':
-            messages.warning(request, "Acceso restringido: El perfil de Vendedor no tiene acceso al Panel de Control.")
-            return redirect('stock_vendedores')
-        elif request.user.username == 'operario':
-            messages.warning(request, "Acceso restringido: El perfil de Operario no tiene acceso al Panel de Control.")
-            return redirect('despacho')
-
     import datetime
     import calendar
     from django.utils import timezone
@@ -225,13 +219,9 @@ def dashboard(request):
     return render(request, 'inventario/dashboard.html', contexto)
 
 @login_required
+@bloquear_seccion('subir_documento', "Acceso denegado: tu perfil no tiene permisos para subir documentos.")
 def subir_documento(request):
     """ Vista que procesa el formulario del Modal """
-    if getattr(settings, 'MODO_DEMO', False):
-        if request.user.username in ['vendedor', 'operario']:
-            messages.error(request, "Acceso denegado: Tu perfil no tiene permisos para subir documentos.")
-            return redirect('stock_vendedores' if request.user.username == 'vendedor' else 'despacho')
-
     if request.method == 'POST':
         archivo = request.FILES.get('archivo_factura')
         if archivo:
@@ -259,13 +249,9 @@ def subir_documento(request):
     return redirect(referer)
 
 @login_required
+@bloquear_seccion('productos', "Acceso restringido: tu perfil no tiene acceso al Inventario.")
 def lista_productos(request):
     """ Vista del inventario (CRUD Leer) """
-    if getattr(settings, 'MODO_DEMO', False):
-        if request.user.username == 'operario':
-            messages.warning(request, "Acceso restringido: El perfil de Operario no tiene acceso al Inventario.")
-            return redirect('despacho')
-
     productos = Producto.objects.prefetch_related('detallefactura_set__factura').all().order_by('codigo')
     form = ProductoForm()
 
@@ -279,30 +265,16 @@ def lista_productos(request):
     })
 
 @login_required
+@bloquear_seccion('clientes', "Acceso restringido: tu perfil no tiene acceso al Directorio de Clientes.")
 def lista_clientes(request):
     """ Vista del directorio de clientes (CRUD Leer) """
-    if getattr(settings, 'MODO_DEMO', False):
-        if request.user.username == 'vendedor':
-            messages.warning(request, "Acceso restringido: El perfil de Vendedor no tiene acceso al Directorio de Clientes.")
-            return redirect('stock_vendedores')
-        elif request.user.username == 'operario':
-            messages.warning(request, "Acceso restringido: El perfil de Operario no tiene acceso al Directorio de Clientes.")
-            return redirect('despacho')
-
     clientes = Cliente.objects.all().order_by('razon_social')
     return render(request, 'inventario/lista_clientes.html', {'clientes': clientes})
 
 @login_required
+@bloquear_seccion('facturas', "Acceso restringido: tu perfil no tiene acceso al historial de Ventas.")
 def lista_facturas(request):
     """ Vista del registro histórico de facturas, guías y notas de crédito (CRUD Leer) """
-    if getattr(settings, 'MODO_DEMO', False):
-        if request.user.username == 'vendedor':
-            messages.warning(request, "Acceso restringido: El perfil de Vendedor no tiene acceso al historial de Ventas.")
-            return redirect('stock_vendedores')
-        elif request.user.username == 'operario':
-            messages.warning(request, "Acceso restringido: El perfil de Operario no tiene acceso al historial de Ventas.")
-            return redirect('despacho')
-
     estado = request.GET.get('estado', 'PENDIENTE')
 
     if estado == 'TODAS':
@@ -325,6 +297,8 @@ def lista_facturas(request):
         'estado_filtro': estado
     })
 
+@login_required
+@bloquear_seccion('productos', "Acceso restringido: tu perfil no tiene acceso al Inventario.")
 def editar_producto(request, id):
     """ Vista para editar un producto existente """
     producto = get_object_or_404(Producto, id=id)
@@ -346,6 +320,8 @@ def editar_producto(request, id):
 
     return render(request, 'inventario/editar_producto.html', {'form': form, 'producto': producto})
 
+@login_required
+@bloquear_seccion('productos', "Acceso restringido: tu perfil no tiene acceso al Inventario.")
 def editar_producto_masivo(request):
     """ Vista para editar en masa múltiples productos seleccionados """
     ids_raw = request.GET.get('ids', '') or request.POST.get('ids', '')
@@ -420,6 +396,8 @@ def editar_producto_masivo(request):
     }
     return render(request, 'inventario/editar_producto_masivo.html', contexto)
 
+@login_required
+@bloquear_seccion('productos', "Acceso restringido: tu perfil no tiene acceso al Inventario.")
 def crear_producto(request):
     """ Vista para crear un nuevo producto """
     if request.method == 'POST':
@@ -437,6 +415,8 @@ def crear_producto(request):
 
     return render(request, 'inventario/editar_producto.html', {'form': form, 'producto': None})
 
+@login_required
+@bloquear_seccion('productos', "Acceso restringido: tu perfil no tiene acceso al Inventario.")
 def eliminar_producto(request, id):
     """ Vista para eliminar un producto """
     producto = get_object_or_404(Producto, id=id)
@@ -450,6 +430,8 @@ def eliminar_producto(request, id):
     return redirect('lista_productos')
 
 # --- CRUD CLIENTES ---
+@login_required
+@bloquear_seccion('clientes', "Acceso restringido: tu perfil no tiene acceso al Directorio de Clientes.")
 def editar_cliente(request, id):
     cliente = get_object_or_404(Cliente, id=id)
     if request.method == 'POST':
@@ -462,6 +444,8 @@ def editar_cliente(request, id):
         form = ClienteForm(instance=cliente)
     return render(request, 'inventario/editar_cliente.html', {'form': form, 'cliente': cliente})
 
+@login_required
+@bloquear_seccion('clientes', "Acceso restringido: tu perfil no tiene acceso al Directorio de Clientes.")
 def eliminar_cliente(request, id):
     cliente = get_object_or_404(Cliente, id=id)
     if request.method == 'POST':
@@ -473,6 +457,8 @@ def eliminar_cliente(request, id):
     return redirect('lista_clientes')
 
 # --- CRUD FACTURAS ---
+@login_required
+@bloquear_seccion('facturas', "Acceso restringido: tu perfil no tiene acceso al historial de Ventas.")
 def editar_factura(request, id):
     factura = get_object_or_404(Factura, id=id)
     if request.method == 'POST':
@@ -485,6 +471,8 @@ def editar_factura(request, id):
         form = FacturaForm(instance=factura)
     return render(request, 'inventario/editar_factura.html', {'form': form, 'factura': factura})
 
+@login_required
+@bloquear_seccion('facturas', "Acceso restringido: tu perfil no tiene acceso al historial de Ventas.")
 def eliminar_factura(request, id):
     factura = get_object_or_404(Factura, id=id)
     if request.method == 'POST':
@@ -504,6 +492,8 @@ def eliminar_factura(request, id):
         messages.success(request, f"La {tipo_lbl} {numero} y sus productos exclusivos fueron eliminados. El stock fue ajustado correspondientemente.")
     return redirect('lista_facturas')
 
+@login_required
+@bloquear_seccion('facturas', "Acceso restringido: tu perfil no tiene acceso al historial de Ventas.")
 def ver_factura(request, id):
     """ Vista para ver detalles de una factura (para modal) """
     factura = get_object_or_404(Factura, id=id)
@@ -514,6 +504,8 @@ def ver_factura(request, id):
     }
     return render(request, 'inventario/modal_factura.html', contexto)
 
+@login_required
+@bloquear_seccion('despacho', "Acceso restringido: tu perfil no tiene acceso al módulo de Despachos.")
 def ver_guia_despacho(request, id):
     """ Vista para visualizar o imprimir la Guía de Despacho """
     despacho = get_object_or_404(Despacho, id=id)
@@ -526,6 +518,8 @@ def ver_guia_despacho(request, id):
     }
     return render(request, 'inventario/guia_despacho.html', contexto)
 
+@login_required
+@bloquear_seccion('facturas', "Acceso restringido: tu perfil no tiene acceso al historial de Ventas.")
 def facturas_cliente(request, id):
     """ Vista para ver facturas pendientes de despacho de un cliente específico """
     cliente = get_object_or_404(Cliente, id=id)
@@ -537,12 +531,8 @@ def facturas_cliente(request, id):
     return render(request, 'inventario/facturas_cliente.html', contexto)
 
 @login_required
+@bloquear_seccion('despacho', "Acceso restringido: tu perfil no tiene acceso al módulo de Despachos.")
 def preparar_despacho(request):
-    if getattr(settings, 'MODO_DEMO', False):
-        if request.user.username == 'vendedor':
-            messages.warning(request, "Acceso restringido: El perfil de Vendedor no tiene acceso al módulo de Despachos.")
-            return redirect('stock_vendedores')
-
     buscar = request.GET.get('buscar', '').strip()
     tipo = request.GET.get('tipo', '').strip()
     factura = None
@@ -593,6 +583,8 @@ def preparar_despacho(request):
         'matches': matches
     })
 
+@login_required
+@bloquear_seccion('despacho', "Acceso restringido: tu perfil no tiene acceso al módulo de Despachos.")
 def confirmar_despacho(request, id):
     """ Marca una factura o nota de crédito como despachada/procesada y descuenta o devuelve stock """
     if request.method == 'POST':
@@ -632,6 +624,8 @@ def confirmar_despacho(request, id):
         return redirect('despacho')
     return redirect('despacho')
 
+@login_required
+@bloquear_seccion('despacho', "Acceso restringido: tu perfil no tiene acceso al módulo de Despachos.")
 def historial_despachos(request):
     """ Muestra la lista de todos los despachos realizados """
     from .models import Despacho
@@ -712,18 +706,11 @@ def procesar_carpeta_compartida_automatico(user=None):
     return resultados
 
 @login_required
+@bloquear_seccion('compartida', "Acceso restringido: tu perfil no tiene acceso al Buzón Compartido.")
 def lista_compartida(request):
     """
     Lista las facturas depositadas en la carpeta compartida que están listas para importar.
     """
-    if getattr(settings, 'MODO_DEMO', False):
-        if request.user.username == 'vendedor':
-            messages.warning(request, "Acceso restringido: El perfil de Vendedor no tiene acceso al Buzón Compartido.")
-            return redirect('stock_vendedores')
-        elif request.user.username == 'operario':
-            messages.warning(request, "Acceso restringido: El perfil de Operario no tiene acceso al Buzón Compartido.")
-            return redirect('despacho')
-
     from .config import get_shared_dirs
     incoming_dir, _ = get_shared_dirs()
     os.makedirs(incoming_dir, exist_ok=True)
@@ -922,15 +909,11 @@ def eliminar_factura_compartida(request):
     return redirect('lista_compartida')
 
 @login_required
+@bloquear_seccion('configuracion', "Acceso denegado: tu perfil no tiene permisos para configurar carpetas.")
 def guardar_configuracion(request):
     """
     Guarda la configuración de las rutas de las carpetas compartidas.
     """
-    if getattr(settings, 'MODO_DEMO', False):
-        if request.user.username in ['vendedor', 'operario']:
-            messages.error(request, "Acceso denegado: Tu perfil no tiene permisos para configurar carpetas.")
-            return redirect('stock_vendedores' if request.user.username == 'vendedor' else 'despacho')
-
     if request.method == 'POST':
         incoming = request.POST.get('incoming', '').strip()
         processed = request.POST.get('processed', '').strip()

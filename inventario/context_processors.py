@@ -1,6 +1,7 @@
 import os
 import logging
 from django.conf import settings
+from .roles import secciones_bloqueadas_de
 
 logger = logging.getLogger(__name__)
 
@@ -27,5 +28,9 @@ def compartida_count(request):
         'cant_compartidas': cant,
         'shared_incoming_dir': incoming_dir,
         'shared_processed_dir': processed_dir,
-        'MODO_DEMO': getattr(settings, 'MODO_DEMO', False)
+        'MODO_DEMO': getattr(settings, 'MODO_DEMO', False),
+        # Secciones que el usuario logueado NO puede ver (ej. {'clientes', 'facturas'}).
+        # Usar en templates: {% if 'clientes' not in secciones_bloqueadas %}...{% endif %}
+        'secciones_bloqueadas': secciones_bloqueadas_de(getattr(request, 'user', None)),
     }
+

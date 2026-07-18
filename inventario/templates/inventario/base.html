@@ -1,1149 +1,1537 @@
 {% load static %}
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="OpenDTE ERP - Sistema de facturación electrónica y gestión de inventario para pymes chilenas. Compatible con documentos tributarios del SII.">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="OpenDTE ERP - Sistema de facturación electrónica y gestión de inventario para pymes chilenas. Compatible con documentos tributarios del SII."
+    />
     <title>{% block title %}OpenDTE ERP{% endblock %}</title>
-    
+
     <!-- Favicon -->
-    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
-    
+    <link
+      rel="icon"
+      href="{% static 'img/favicon.ico' %}"
+      type="image/x-icon"
+    />
+
     <!-- Bootstrap y Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="{% static 'css/bootstrap-icons.css' %}">
-    
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    />
+    <link rel="stylesheet" href="{% static 'css/bootstrap-icons.css' %}" />
+
     <!-- Estilos de OpenDTE -->
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-    
+    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+
     <!-- Configuración para PWA (App Instalable y Offline) -->
-    <link rel="manifest" href="{% url 'manifest.json' %}">
-    <meta name="theme-color" content="#111215">
-    <link class="theme-meta-tag" rel="apple-touch-icon" href="{% static 'img/logo.webp' %}">
-    
+    <link rel="manifest" href="{% url 'manifest.json' %}" />
+    <meta name="theme-color" content="#111215" />
+    <link
+      class="theme-meta-tag"
+      rel="apple-touch-icon"
+      href="{% static 'img/logo.webp' %}"
+    />
+
     <!-- Script preventivo contra destellos de tema oscuro -->
     <script>
-        (function() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-bs-theme', savedTheme);
-        })();
+      (function () {
+        const savedTheme = localStorage.getItem("theme") || "light";
+        document.documentElement.setAttribute("data-bs-theme", savedTheme);
+      })();
     </script>
-    
+
     <!-- Script Global para Detección Real Offline -->
     <script>
-        window.isOfflineMode = () => {
-            return false;
-        };
+      window.isOfflineMode = () => {
+        return false;
+      };
     </script>
-</head>
-<body {% if request.resolver_match.url_name == 'despacho' %}class="layout-despacho"{% endif %}>
-
+  </head>
+  <body
+    class="{% if request.resolver_match.url_name == 'despacho' %}layout-despacho{% endif %}"
+  >
     <!-- Contenedor General de la Aplicación -->
     <div class="app-container">
+      <!-- Header Móvil (Solo visible en pantallas < 992px) -->
+      <header
+        class="mobile-header d-lg-none d-flex justify-content-between align-items-center px-3"
+      >
+        <a
+          href="{% url 'dashboard' %}"
+          class="mobile-logo text-decoration-none d-flex align-items-center"
+        >
+          <span class="fs-4 fw-bold text-fs-yellow"
+            >Open<span class="text-white">DTE</span></span
+          >
+        </a>
+        <div class="d-flex align-items-center gap-2">
+          {% if user.is_authenticated %}
+          <a
+            href="/accounts/login/"
+            class="btn btn-outline-danger btn-sm py-1 px-2"
+            title="Cerrar sesión / Cambiar perfil"
+          >
+            <i class="bi bi-box-arrow-right fs-5"></i>
+          </a>
+          {% endif %}
+          <button
+            class="btn btn-outline-light"
+            type="button"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#offcanvasSidebarMenu"
+            aria-controls="offcanvasSidebarMenu"
+          >
+            <i class="bi bi-list fs-3"></i>
+          </button>
+        </div>
+      </header>
 
-        <!-- Header Móvil (Solo visible en pantallas < 992px) -->
-        <header class="mobile-header d-lg-none d-flex justify-content-between align-items-center px-3">
-            <a href="{% url 'dashboard' %}" class="mobile-logo text-decoration-none d-flex align-items-center">
-                <span class="fs-4 fw-bold text-fs-yellow">Open<span class="text-white">DTE</span></span>
+      <!-- Sidebar Fijo en Escritorio (Solo visible en pantallas >= 992px) -->
+      <aside
+        class="sidebar d-none d-lg-flex flex-column justify-content-between"
+      >
+        <!-- Logo Header (Fijo) -->
+        <div class="sidebar-header">
+          <div
+            class="text-center py-3 border-bottom border-secondary border-opacity-25"
+          >
+            <a
+              href="{% url 'dashboard' %}"
+              class="text-decoration-none d-inline-block"
+            >
+              <span class="fs-3 fw-bold text-fs-yellow"
+                >Open<span class="text-white">DTE</span></span
+              >
             </a>
-            <div class="d-flex align-items-center gap-2">
-                {% if user.is_authenticated %}
-                <a href="/accounts/login/" class="btn btn-outline-danger btn-sm py-1 px-2" title="Cerrar sesión / Cambiar perfil">
-                    <i class="bi bi-box-arrow-right fs-5"></i>
-                </a>
-                {% endif %}
-                <button class="btn btn-outline-light" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebarMenu" aria-controls="offcanvasSidebarMenu">
-                    <i class="bi bi-list fs-3"></i>
-                </button>
+            {% if user.is_authenticated %}
+            <div class="mt-2 small text-muted">
+              <span class="badge bg-secondary px-2 py-1">
+                <i class="bi bi-person-fill me-1"></i> {{ user.first_name }}
+              </span>
+              <a
+                href="/accounts/login/"
+                class="ms-1 text-danger text-decoration-none"
+                title="Cerrar sesión / Cambiar perfil"
+              >
+                <i class="bi bi-box-arrow-right"></i>
+              </a>
             </div>
-        </header>
-
-        <!-- Sidebar Fijo en Escritorio (Solo visible en pantallas >= 992px) -->
-        <aside class="sidebar d-none d-lg-flex flex-column justify-content-between">
-            <!-- Logo Header (Fijo) -->
-            <div class="sidebar-header">
-                <div class="text-center py-3 border-bottom border-secondary border-opacity-25">
-                    <a href="{% url 'dashboard' %}" class="text-decoration-none d-inline-block">
-                        <span class="fs-3 fw-bold text-fs-yellow">Open<span class="text-white">DTE</span></span>
-                    </a>
-                    {% if user.is_authenticated %}
-                    <div class="mt-2 small text-muted">
-                        <span class="badge bg-secondary px-2 py-1">
-                            <i class="bi bi-person-fill me-1"></i> {{ user.first_name }}
-                        </span>
-                        <a href="/accounts/login/" class="ms-1 text-danger text-decoration-none" title="Cerrar sesión / Cambiar perfil">
-                            <i class="bi bi-box-arrow-right"></i>
-                        </a>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Navegación (Scrolleable) -->
-            <div class="sidebar-nav-scroll">
-                <ul class="sidebar-nav">
-                    {% if not MODO_DEMO or user.username == 'admin' or user.is_superuser %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
-                            <i class="bi bi-house-door-fill"></i> Panel de Control
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'lista_facturas' %}active{% endif %}" href="{% url 'lista_facturas' %}">
-                            <i class="bi bi-receipt"></i> Ventas
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'lista_clientes' or request.resolver_match.url_name == 'editar_cliente' %}active{% endif %}" href="{% url 'lista_clientes' %}">
-                            <i class="bi bi-people-fill"></i> Clientes
-                        </a>
-                    </li>
-                    {% endif %}
-
-                    {% if not MODO_DEMO or user.username == 'admin' or user.is_superuser or user.username == 'vendedor' %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'lista_productos' or request.resolver_match.url_name == 'editar_producto' %}active{% endif %}" href="{% url 'lista_productos' %}">
-                            <i class="bi bi-box-seam-fill"></i> Inventario
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'stock_vendedores' %}active{% endif %}" href="{% url 'stock_vendedores' %}">
-                            <i class="bi bi-boxes"></i> Stock Bodega Temuco
-                        </a>
-                    </li>
-                    {% endif %}
-
-                    {% if not MODO_DEMO or user.username == 'admin' or user.is_superuser or user.username == 'operario' %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'despacho' %}active{% endif %}" href="{% url 'despacho' %}">
-                            <i class="bi bi-truck text-fs-yellow"></i> Preparar Despacho
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'historial_despachos' %}active{% endif %}" href="{% url 'historial_despachos' %}">
-                            <i class="bi bi-clock-history"></i> Historial Despachos
-                        </a>
-                    </li>
-                    {% endif %}
-
-                    {% if not MODO_DEMO or user.username == 'admin' or user.is_superuser %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'lista_compartida' %}active{% endif %}" href="{% url 'lista_compartida' %}">
-                            <i class="bi bi-folder-symlink-fill"></i> Buzón Compartido
-                            {% if cant_compartidas > 0 %}
-                            <span class="badge-pending">{{ cant_compartidas }}</span>
-                            {% endif %}
-                        </a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </div>
-
-            <!-- Botones en la parte inferior del aside (Fijo) -->
-            <div class="sidebar-footer">
-                <button type="button" class="btn btn-fs-yellow w-100 fw-bold mb-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalSubirArchivo">
-                    <i class="bi bi-cloud-arrow-up-fill"></i> Subir PDF/XML
-                </button>
-                
-
-                <!-- Selector de Tema (Claro / Oscuro) -->
-                <div class="form-check form-switch sidebar-switch-card px-3 py-2 rounded border mt-2" title="Alternar entre tema claro y oscuro">
-                    <input class="form-check-input ms-0 me-2 theme-toggle-input" type="checkbox" style="cursor: pointer;" id="themeToggleDesktop">
-                    <label class="form-check-label fw-bold mb-0 theme-toggle-label" for="themeToggleDesktop" style="cursor: pointer;">
-                        <i class="bi bi-sun-fill text-warning me-1" id="themeIconDesktop"></i>
-                        <span id="themeTextDesktop">Modo Claro</span>
-                    </label>
-                </div>
-
-                <!-- Botón Restaurar Demo -->
-                <button type="button" id="btnRestaurarDemoDesktop" class="btn btn-outline-danger w-100 fw-bold mt-2 shadow-sm" title="Restaurar base de datos a valores de demostración originales">
-                    <i class="bi bi-arrow-counterclockwise"></i> Restaurar Demo
-                </button>
-            </div>
-        </aside>
-
-        <!-- Sidebar Offcanvas para Móviles -->
-        <div class="offcanvas offcanvas-start offcanvas-sidebar d-lg-none" tabindex="-1" id="offcanvasSidebarMenu" aria-labelledby="offcanvasSidebarMenuLabel">
-            <div class="offcanvas-header border-bottom border-secondary border-opacity-25">
-                <h5 class="offcanvas-title fw-bold" id="offcanvasSidebarMenuLabel">
-                    <span class="text-fs-yellow">Open<span class="text-white">DTE</span></span> <span class="text-muted fs-6 ms-2">Menú</span>
-                </h5>
-                {% if user.is_authenticated %}
-                <div class="ms-auto me-2 small text-muted d-flex align-items-center">
-                    <span class="badge bg-secondary px-2 py-1">
-                        {{ user.first_name }}
-                    </span>
-                    <a href="/accounts/login/" class="ms-2 text-danger text-decoration-none fs-5" title="Cerrar sesión / Cambiar perfil">
-                        <i class="bi bi-box-arrow-right"></i>
-                    </a>
-                </div>
-                {% endif %}
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-            </div>
-            <div class="offcanvas-body d-flex flex-column justify-content-between p-3">
-                <div>
-                    <ul class="sidebar-nav">
-                        {% if not MODO_DEMO or user.username == 'admin' or user.is_superuser %}
-                        <li class="nav-item" data-bs-dismiss="offcanvas">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
-                                <i class="bi bi-house-door-fill"></i> Panel de Control
-                            </a>
-                        </li>
-                        <li class="nav-item" data-bs-dismiss="offcanvas">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'lista_facturas' %}active{% endif %}" href="{% url 'lista_facturas' %}">
-                                <i class="bi bi-receipt"></i> Ventas
-                            </a>
-                        </li>
-                        <li class="nav-item" data-bs-dismiss="offcanvas">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'lista_clientes' or request.resolver_match.url_name == 'editar_cliente' %}active{% endif %}" href="{% url 'lista_clientes' %}">
-                                <i class="bi bi-people-fill"></i> Clientes
-                            </a>
-                        </li>
-                        {% endif %}
-
-                        {% if not MODO_DEMO or user.username == 'admin' or user.is_superuser or user.username == 'vendedor' %}
-                        <li class="nav-item" data-bs-dismiss="offcanvas">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'lista_productos' or request.resolver_match.url_name == 'editar_producto' %}active{% endif %}" href="{% url 'lista_productos' %}">
-                                <i class="bi bi-box-seam-fill"></i> Inventario
-                            </a>
-                        </li>
-                        <li class="nav-item" data-bs-dismiss="offcanvas">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'stock_vendedores' %}active{% endif %}" href="{% url 'stock_vendedores' %}">
-                                <i class="bi bi-boxes"></i> Stock Bodega Temuco
-                            </a>
-                        </li>
-                        {% endif %}
-
-                        {% if not MODO_DEMO or user.username == 'admin' or user.is_superuser or user.username == 'operario' %}
-                        <li class="nav-item" data-bs-dismiss="offcanvas">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'despacho' %}active{% endif %}" href="{% url 'despacho' %}">
-                                <i class="bi bi-truck text-fs-yellow"></i> Preparar Despacho
-                            </a>
-                        </li>
-                        <li class="nav-item" data-bs-dismiss="offcanvas">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'historial_despachos' %}active{% endif %}" href="{% url 'historial_despachos' %}">
-                                <i class="bi bi-clock-history"></i> Historial Despachos
-                            </a>
-                        </li>
-                        {% endif %}
-
-                        {% if not MODO_DEMO or user.username == 'admin' or user.is_superuser %}
-                        <li class="nav-item" data-bs-dismiss="offcanvas">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'lista_compartida' %}active{% endif %}" href="{% url 'lista_compartida' %}">
-                                <i class="bi bi-folder-symlink-fill"></i> Buzón Compartido
-                                {% if cant_compartidas > 0 %}
-                                <span class="badge-pending">{{ cant_compartidas }}</span>
-                                {% endif %}
-                            </a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </div>
-                
-                <div class="mt-auto pt-3 border-top border-secondary border-opacity-25">
-                    <button type="button" class="btn btn-fs-yellow w-100 fw-bold mb-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalSubirArchivo" data-bs-dismiss="offcanvas">
-                        <i class="bi bi-cloud-arrow-up-fill"></i> Subir PDF/XML
-                    </button>
-                    
-                    <!-- Selector de Tema (Claro / Oscuro) -->
-                    <div class="form-check form-switch sidebar-switch-card px-3 py-2 rounded border mt-2" title="Alternar entre tema claro y oscuro">
-                        <input class="form-check-input ms-0 me-2 theme-toggle-input" type="checkbox" style="cursor: pointer;" id="themeToggleMobile">
-                        <label class="form-check-label fw-bold mb-0 theme-toggle-label" for="themeToggleMobile" style="cursor: pointer;">
-                            <i class="bi bi-sun-fill text-warning me-1" id="themeIconMobile"></i>
-                            <span id="themeTextMobile">Modo Claro</span>
-                        </label>
-                    </div>
-
-                    <!-- Botón Restaurar Demo Móvil -->
-                    <button type="button" id="btnRestaurarDemoMobile" class="btn btn-outline-danger w-100 fw-bold mt-2 shadow-sm" data-bs-dismiss="offcanvas" title="Restaurar base de datos a valores de demostración originales">
-                        <i class="bi bi-arrow-counterclockwise"></i> Restaurar Demo
-                    </button>
-                </div>
-            </div>
+            {% endif %}
+          </div>
         </div>
 
-        <!-- Contenedor del Contenido de la Página -->
-        <main class="main-content">
-            <div class="container-fluid">
-                <!-- Aquí se inyecta el contenido de las otras pantallas -->
-                {% block content %}
-                {% endblock content %}
-                
-                <!-- Footer en el flujo normal de navegación -->
-                <footer class="text-center py-4 text-muted mt-5 border-top">
-                    <p class="mb-0 small">&copy; {% now "Y" %} OpenDTE ERP - Desarrollado para Comercial OpenDTE Ltda. | Versión 1.1.10</p>
-                </footer>
+        <!-- Navegación (Scrolleable) -->
+        <div class="sidebar-nav-scroll">
+          <ul class="sidebar-nav">
+            {% if 'dashboard' not in secciones_bloqueadas %}
+            <li class="nav-item">
+              <a
+                class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+                href="{% url 'dashboard' %}"
+              >
+                <i class="bi bi-house-door-fill"></i> Panel de Control
+              </a>
+            </li>
+            {% endif %} {% if 'facturas' not in secciones_bloqueadas %}
+            <li class="nav-item">
+              <a
+                class="nav-link {% if request.resolver_match.url_name == 'lista_facturas' %}active{% endif %}"
+                href="{% url 'lista_facturas' %}"
+              >
+                <i class="bi bi-receipt"></i> Ventas
+              </a>
+            </li>
+            {% endif %} {% if 'clientes' not in secciones_bloqueadas %}
+            <li class="nav-item">
+              <a
+                class="nav-link {% if request.resolver_match.url_name == 'lista_clientes' or request.resolver_match.url_name == 'editar_cliente' %}active{% endif %}"
+                href="{% url 'lista_clientes' %}"
+              >
+                <i class="bi bi-people-fill"></i> Clientes
+              </a>
+            </li>
+            {% endif %} {% if 'productos' not in secciones_bloqueadas %}
+            <li class="nav-item">
+              <a
+                class="nav-link {% if request.resolver_match.url_name == 'lista_productos' or request.resolver_match.url_name == 'editar_producto' %}active{% endif %}"
+                href="{% url 'lista_productos' %}"
+              >
+                <i class="bi bi-box-seam-fill"></i> Inventario
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link {% if request.resolver_match.url_name == 'stock_vendedores' %}active{% endif %}"
+                href="{% url 'stock_vendedores' %}"
+              >
+                <i class="bi bi-boxes"></i> Stock Bodega Temuco
+              </a>
+            </li>
+            {% endif %} {% if 'despacho' not in secciones_bloqueadas %}
+            <li class="nav-item">
+              <a
+                class="nav-link {% if request.resolver_match.url_name == 'despacho' %}active{% endif %}"
+                href="{% url 'despacho' %}"
+              >
+                <i class="bi bi-truck text-fs-yellow"></i> Preparar Despacho
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link {% if request.resolver_match.url_name == 'historial_despachos' %}active{% endif %}"
+                href="{% url 'historial_despachos' %}"
+              >
+                <i class="bi bi-clock-history"></i> Historial Despachos
+              </a>
+            </li>
+            {% endif %} {% if 'compartida' not in secciones_bloqueadas %}
+            <li class="nav-item">
+              <a
+                class="nav-link {% if request.resolver_match.url_name == 'lista_compartida' %}active{% endif %}"
+                href="{% url 'lista_compartida' %}"
+              >
+                <i class="bi bi-folder-symlink-fill"></i> Buzón Compartido
+                <!-- prettier-ignore -->
+                {% if cant_compartidas > 0 %}<span class="badge-pending"
+                  >{{ cant_compartidas }}</span
+                >{% endif %}
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+
+        <!-- Botones en la parte inferior del aside (Fijo) -->
+        <div class="sidebar-footer">
+          {% if 'subir_documento' not in secciones_bloqueadas %}
+          <button
+            type="button"
+            class="btn btn-fs-yellow w-100 fw-bold mb-3 shadow-sm"
+            data-bs-toggle="modal"
+            data-bs-target="#modalSubirArchivo"
+          >
+            <i class="bi bi-cloud-arrow-up-fill"></i> Subir PDF/XML
+          </button>
+          {% endif %}
+
+          <!-- Selector de Tema (Claro / Oscuro) -->
+          <div
+            class="form-check form-switch sidebar-switch-card px-3 py-2 rounded border mt-2"
+            title="Alternar entre tema claro y oscuro"
+          >
+            <input
+              class="form-check-input ms-0 me-2 theme-toggle-input"
+              type="checkbox"
+              style="cursor: pointer"
+              id="themeToggleDesktop"
+            />
+            <label
+              class="form-check-label fw-bold mb-0 theme-toggle-label"
+              for="themeToggleDesktop"
+              style="cursor: pointer"
+            >
+              <i
+                class="bi bi-sun-fill text-warning me-1"
+                id="themeIconDesktop"
+              ></i>
+              <span id="themeTextDesktop">Modo Claro</span>
+            </label>
+          </div>
+
+          <!-- Botón Restaurar Demo -->
+          <button
+            type="button"
+            id="btnRestaurarDemoDesktop"
+            class="btn btn-outline-danger w-100 fw-bold mt-2 shadow-sm"
+            title="Restaurar base de datos a valores de demostración originales"
+          >
+            <i class="bi bi-arrow-counterclockwise"></i> Restaurar Demo
+          </button>
+        </div>
+      </aside>
+
+      <!-- Sidebar Offcanvas para Móviles -->
+      <div
+        class="offcanvas offcanvas-start offcanvas-sidebar d-lg-none"
+        tabindex="-1"
+        id="offcanvasSidebarMenu"
+        aria-labelledby="offcanvasSidebarMenuLabel"
+      >
+        <div
+          class="offcanvas-header border-bottom border-secondary border-opacity-25"
+        >
+          <h5 class="offcanvas-title fw-bold" id="offcanvasSidebarMenuLabel">
+            <span class="text-fs-yellow"
+              >Open<span class="text-white">DTE</span></span
+            >
+            <span class="text-muted fs-6 ms-2">Menú</span>
+          </h5>
+          {% if user.is_authenticated %}
+          <div class="ms-auto me-2 small text-muted d-flex align-items-center">
+            <span class="badge bg-secondary px-2 py-1">
+              {{ user.first_name }}
+            </span>
+            <a
+              href="/accounts/login/"
+              class="ms-2 text-danger text-decoration-none fs-5"
+              title="Cerrar sesión / Cambiar perfil"
+            >
+              <i class="bi bi-box-arrow-right"></i>
+            </a>
+          </div>
+          {% endif %}
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="offcanvas"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div
+          class="offcanvas-body d-flex flex-column justify-content-between p-3"
+        >
+          <div>
+            <ul class="sidebar-nav">
+              {% if 'dashboard' not in secciones_bloqueadas %}
+              <li class="nav-item" data-bs-dismiss="offcanvas">
+                <a
+                  class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+                  href="{% url 'dashboard' %}"
+                >
+                  <i class="bi bi-house-door-fill"></i> Panel de Control
+                </a>
+              </li>
+              {% endif %} {% if 'facturas' not in secciones_bloqueadas %}
+              <li class="nav-item" data-bs-dismiss="offcanvas">
+                <a
+                  class="nav-link {% if request.resolver_match.url_name == 'lista_facturas' %}active{% endif %}"
+                  href="{% url 'lista_facturas' %}"
+                >
+                  <i class="bi bi-receipt"></i> Ventas
+                </a>
+              </li>
+              {% endif %} {% if 'clientes' not in secciones_bloqueadas %}
+              <li class="nav-item" data-bs-dismiss="offcanvas">
+                <a
+                  class="nav-link {% if request.resolver_match.url_name == 'lista_clientes' or request.resolver_match.url_name == 'editar_cliente' %}active{% endif %}"
+                  href="{% url 'lista_clientes' %}"
+                >
+                  <i class="bi bi-people-fill"></i> Clientes
+                </a>
+              </li>
+              {% endif %} {% if 'productos' not in secciones_bloqueadas %}
+              <li class="nav-item" data-bs-dismiss="offcanvas">
+                <a
+                  class="nav-link {% if request.resolver_match.url_name == 'lista_productos' or request.resolver_match.url_name == 'editar_producto' %}active{% endif %}"
+                  href="{% url 'lista_productos' %}"
+                >
+                  <i class="bi bi-box-seam-fill"></i> Inventario
+                </a>
+              </li>
+              <li class="nav-item" data-bs-dismiss="offcanvas">
+                <a
+                  class="nav-link {% if request.resolver_match.url_name == 'stock_vendedores' %}active{% endif %}"
+                  href="{% url 'stock_vendedores' %}"
+                >
+                  <i class="bi bi-boxes"></i> Stock Bodega Temuco
+                </a>
+              </li>
+              {% endif %} {% if 'despacho' not in secciones_bloqueadas %}
+              <li class="nav-item" data-bs-dismiss="offcanvas">
+                <a
+                  class="nav-link {% if request.resolver_match.url_name == 'despacho' %}active{% endif %}"
+                  href="{% url 'despacho' %}"
+                >
+                  <i class="bi bi-truck text-fs-yellow"></i> Preparar Despacho
+                </a>
+              </li>
+              <li class="nav-item" data-bs-dismiss="offcanvas">
+                <a
+                  class="nav-link {% if request.resolver_match.url_name == 'historial_despachos' %}active{% endif %}"
+                  href="{% url 'historial_despachos' %}"
+                >
+                  <i class="bi bi-clock-history"></i> Historial Despachos
+                </a>
+              </li>
+              {% endif %} {% if 'compartida' not in secciones_bloqueadas %}
+              <li class="nav-item" data-bs-dismiss="offcanvas">
+                <a
+                  class="nav-link {% if request.resolver_match.url_name == 'lista_compartida' %}active{% endif %}"
+                  href="{% url 'lista_compartida' %}"
+                >
+                  <i class="bi bi-folder-symlink-fill"></i> Buzón Compartido
+                  <!-- prettier-ignore -->
+                  {% if cant_compartidas > 0 %}<span class="badge-pending"
+                    >{{ cant_compartidas }}</span
+                  >{% endif %}
+                </a>
+              </li>
+              {% endif %}
+            </ul>
+          </div>
+
+          <div
+            class="mt-auto pt-3 border-top border-secondary border-opacity-25"
+          >
+            {% if 'subir_documento' not in secciones_bloqueadas %}
+            <button
+              type="button"
+              class="btn btn-fs-yellow w-100 fw-bold mb-3 shadow-sm"
+              data-bs-toggle="modal"
+              data-bs-target="#modalSubirArchivo"
+              data-bs-dismiss="offcanvas"
+            >
+              <i class="bi bi-cloud-arrow-up-fill"></i> Subir PDF/XML
+            </button>
+            {% endif %}
+
+            <!-- Selector de Tema (Claro / Oscuro) -->
+            <div
+              class="form-check form-switch sidebar-switch-card px-3 py-2 rounded border mt-2"
+              title="Alternar entre tema claro y oscuro"
+            >
+              <input
+                class="form-check-input ms-0 me-2 theme-toggle-input"
+                type="checkbox"
+                style="cursor: pointer"
+                id="themeToggleMobile"
+              />
+              <label
+                class="form-check-label fw-bold mb-0 theme-toggle-label"
+                for="themeToggleMobile"
+                style="cursor: pointer"
+              >
+                <i
+                  class="bi bi-sun-fill text-warning me-1"
+                  id="themeIconMobile"
+                ></i>
+                <span id="themeTextMobile">Modo Claro</span>
+              </label>
             </div>
-        </main>
-    
+
+            <!-- Botón Restaurar Demo Móvil -->
+            <button
+              type="button"
+              id="btnRestaurarDemoMobile"
+              class="btn btn-outline-danger w-100 fw-bold mt-2 shadow-sm"
+              data-bs-dismiss="offcanvas"
+              title="Restaurar base de datos a valores de demostración originales"
+            >
+              <i class="bi bi-arrow-counterclockwise"></i> Restaurar Demo
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contenedor del Contenido de la Página -->
+      <main class="main-content">
+        <div class="container-fluid">
+          <!-- Aquí se inyecta el contenido de las otras pantallas -->
+          {% block content %} {% endblock content %}
+
+          <!-- Footer en el flujo normal de navegación -->
+          <footer class="text-center py-4 text-muted mt-5 border-top">
+            <p class="mb-0 small">
+              &copy; {% now "Y" %} OpenDTE ERP - Desarrollado para Comercial
+              OpenDTE Ltda. | Versión 1.1.10
+            </p>
+          </footer>
+        </div>
+      </main>
     </div>
 
     <!-- Contenedor Global de Notificaciones (Toasts) -->
-    <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 1080;">
-        {% if messages %}
-            {% for message in messages %}
-                <div class="toast align-items-center text-white bg-{% if message.tags == 'error' %}danger{% elif message.tags == 'warning' %}warning{% else %}success{% endif %} border-0 shadow-lg mb-3" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="4000">
-                    <div class="d-flex">
-                        <div class="toast-body fs-6 fw-bold">
-                            {% if message.tags == 'error' %}<i class="bi bi-x-circle-fill me-2 fs-5"></i>
-                            {% elif message.tags == 'warning' %}<i class="bi bi-exclamation-triangle-fill me-2 fs-5 text-dark"></i>
-                            {% else %}<i class="bi bi-check-circle-fill me-2 fs-5"></i>{% endif %}
-                            {{ message }}
-                        </div>
-                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-                    </div>
-                </div>
-            {% endfor %}
-        {% endif %}
-        
-        <!-- Plantilla Base de Toast para inyectarle mensajes desde Javascript Offline -->
-        <div id="js-toast-template" class="toast align-items-center border-0 shadow-lg mb-3 d-none text-white" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000">
-            <div class="d-flex">
-                <div class="toast-body fs-6 fw-bold" id="js-toast-body">
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
+    <div
+      class="toast-container position-fixed bottom-0 end-0 p-4"
+      style="z-index: 1080"
+    >
+      {% if messages %} {% for message in messages %}
+      <div
+        class="toast align-items-center text-white bg-{% if message.tags == 'error' %}danger{% elif message.tags == 'warning' %}warning{% else %}success{% endif %} border-0 shadow-lg mb-3"
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+        data-bs-delay="4000"
+      >
+        <div class="d-flex">
+          <!-- prettier-ignore -->
+          <div class="toast-body fs-6 fw-bold">{% if message.tags == 'error' %}<i class="bi bi-x-circle-fill me-2 fs-5"></i>{% elif message.tags == 'warning' %}<i class="bi bi-exclamation-triangle-fill me-2 fs-5 text-dark"></i>{% else %}<i class="bi bi-check-circle-fill me-2 fs-5"></i>{% endif %} {{ message }}</div>
+          <button
+            type="button"
+            class="btn-close btn-close-white me-2 m-auto"
+            data-bs-dismiss="toast"
+            aria-label="Close"
+          ></button>
         </div>
+      </div>
+      {% endfor %} {% endif %}
+
+      <!-- Plantilla Base de Toast para inyectarle mensajes desde Javascript Offline -->
+      <div
+        id="js-toast-template"
+        class="toast align-items-center border-0 shadow-lg mb-3 d-none text-white"
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+        data-bs-delay="5000"
+      >
+        <div class="d-flex">
+          <div class="toast-body fs-6 fw-bold" id="js-toast-body"></div>
+          <button
+            type="button"
+            class="btn-close btn-close-white me-2 m-auto"
+            data-bs-dismiss="toast"
+            aria-label="Close"
+          ></button>
+        </div>
+      </div>
     </div>
 
     <!-- Modal para Subir Documento -->
-    <div class="modal fade" id="modalSubirArchivo" tabindex="-1" aria-labelledby="modalSubirArchivoLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
-                
-                <div class="modal-header bg-fs-black text-white">
-                    <h5 class="modal-title" id="modalSubirArchivoLabel">
-                        <i class="bi bi-cloud-arrow-up text-fs-yellow"></i> Procesar nuevo documento de venta
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                
-                <!-- El formulario de subida via JS -->
-                <form id='form-subir-documento' action="{% url 'subir_documento' %}" method="POST" enctype='multipart/form-data'>
-                    {% csrf_token %}
-                    <div class='modal-body p-4 bg-light'>
-                        <div id='upload-alert-container'></div>
-                        <div class='mb-3'>
-                            <label for='archivo_factura' class='form-label fw-bold text-fs-grey'>Seleccionar PDF</label>
-                            <input class='form-control form-control-lg' type='file' id='archivo_factura' name='archivo_factura' accept='.xml,.pdf' required>
-                        </div>
-                    </div>
-                    <div class='modal-footer bg-light border-top-0'>
-                        <button type='button' class='btn btn-outline-secondary' data-bs-dismiss='modal'>Cancelar</button>
-                        <button type='submit' class='btn btn-fs-yellow fw-bold' id='btn-procesar-doc'>Subir Documento</button>
-                    </div>
-                </form>
+    <div
+      class="modal fade"
+      id="modalSubirArchivo"
+      tabindex="-1"
+      aria-labelledby="modalSubirArchivoLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header bg-fs-black text-white">
+            <h5 class="modal-title" id="modalSubirArchivoLabel">
+              <i class="bi bi-cloud-arrow-up text-fs-yellow"></i> Procesar nuevo
+              documento de venta
+            </h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+
+          <!-- El formulario de subida via JS -->
+          <form
+            id="form-subir-documento"
+            action="{% url 'subir_documento' %}"
+            method="POST"
+            enctype="multipart/form-data"
+          >
+            {% csrf_token %}
+            <div class="modal-body p-4 bg-light">
+              <div id="upload-alert-container"></div>
+              <div class="mb-3">
+                <label
+                  for="archivo_factura"
+                  class="form-label fw-bold text-fs-grey"
+                  >Seleccionar PDF</label
+                >
+                <input
+                  class="form-control form-control-lg"
+                  type="file"
+                  id="archivo_factura"
+                  name="archivo_factura"
+                  accept=".xml,.pdf"
+                  required
+                />
+              </div>
             </div>
+            <div class="modal-footer bg-light border-top-0">
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                data-bs-dismiss="modal"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                class="btn btn-fs-yellow fw-bold"
+                id="btn-procesar-doc"
+              >
+                Subir Documento
+              </button>
+            </div>
+          </form>
         </div>
+      </div>
     </div>
-    
+
     <!-- Modal de Confirmación de Factura en Carpeta Compartida -->
-    <div class="modal fade" id="modalConfirmacionCompartida" tabindex="-1" aria-labelledby="modalConfirmacionCompartidaLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-fs-black text-white">
-                    <h5 class="modal-title fw-bold" id="modalConfirmacionCompartidaLabel">
-                        <i class="bi bi-folder-symlink-fill text-fs-yellow me-2"></i>Nueva Factura Detectada
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-4 bg-light text-center">
-                    <div class="mb-3">
-                        <i class="bi bi-file-earmark-arrow-up-fill text-fs-yellow display-1 animate-pulse"></i>
-                    </div>
-                    <h5 class="fw-bold text-dark mb-2">Se ha detectado una nueva factura</h5>
-                    <p class="text-muted mb-3">
-                        Se encontró el archivo <strong id="modal-compartida-filename" class="text-primary text-break"></strong> en la carpeta compartida.
-                    </p>
-                    <p class="small text-fs-grey mb-0">
-                        ¿Desea guardar e importar este documento al sistema, o cancelar y eliminar el archivo permanentemente?
-                    </p>
-                </div>
-                <div class="modal-footer bg-light border-top-0 d-flex justify-content-between">
-                    <button type="button" class="btn btn-outline-danger fw-bold" id="btn-modal-cancelar">
-                        <i class="bi bi-trash3-fill me-1"></i>Cancelar (Eliminar)
-                    </button>
-                    <button type="button" class="btn btn-fs-yellow fw-bold px-3" id="btn-modal-guardar">
-                        <i class="bi bi-check-circle-fill me-1"></i>Guardar en Sistema
-                    </button>
-                </div>
+    <div
+      class="modal fade"
+      id="modalConfirmacionCompartida"
+      tabindex="-1"
+      aria-labelledby="modalConfirmacionCompartidaLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+          <div class="modal-header bg-fs-black text-white">
+            <h5
+              class="modal-title fw-bold"
+              id="modalConfirmacionCompartidaLabel"
+            >
+              <i class="bi bi-folder-symlink-fill text-fs-yellow me-2"></i>Nueva
+              Factura Detectada
+            </h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body p-4 bg-light text-center">
+            <div class="mb-3">
+              <i
+                class="bi bi-file-earmark-arrow-up-fill text-fs-yellow display-1 animate-pulse"
+              ></i>
             </div>
+            <h5 class="fw-bold text-dark mb-2">
+              Se ha detectado una nueva factura
+            </h5>
+            <p class="text-muted mb-3">
+              Se encontró el archivo
+              <strong
+                id="modal-compartida-filename"
+                class="text-primary text-break"
+              ></strong>
+              en la carpeta compartida.
+            </p>
+            <p class="small text-fs-grey mb-0">
+              ¿Desea guardar e importar este documento al sistema, o cancelar y
+              eliminar el archivo permanentemente?
+            </p>
+          </div>
+          <div
+            class="modal-footer bg-light border-top-0 d-flex justify-content-between"
+          >
+            <button
+              type="button"
+              class="btn btn-outline-danger fw-bold"
+              id="btn-modal-cancelar"
+            >
+              <i class="bi bi-trash3-fill me-1"></i>Cancelar (Eliminar)
+            </button>
+            <button
+              type="button"
+              class="btn btn-fs-yellow fw-bold px-3"
+              id="btn-modal-guardar"
+            >
+              <i class="bi bi-check-circle-fill me-1"></i>Guardar en Sistema
+            </button>
+          </div>
         </div>
+      </div>
     </div>
-    
-    
+
     <!-- Bootstrap JS (CDN) para que funcionen los dropdowns, alertas y menús móviles -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <script>
-        // --- IndexedDB para almacenar FileSystemDirectoryHandle (Definido de inmediato para disponibilidad global) ---
-        const DB_NAME = 'FileSystemSyncDB';
-        const STORE_NAME = 'handles';
-        const DB_KEY = 'local_folder';
+      // --- IndexedDB para almacenar FileSystemDirectoryHandle (Definido de inmediato para disponibilidad global) ---
+      const DB_NAME = "FileSystemSyncDB";
+      const STORE_NAME = "handles";
+      const DB_KEY = "local_folder";
+
+      function getDB() {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open(DB_NAME, 1);
+          request.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+              db.createObjectStore(STORE_NAME);
+            }
+          };
+          request.onsuccess = (e) => resolve(e.target.result);
+          request.onerror = (e) => reject(e.target.error);
+        });
+      }
+
+      async function guardarHandle(handle) {
+        const db = await getDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, "readwrite");
+          const store = tx.objectStore(STORE_NAME);
+          const req = store.put(handle, DB_KEY);
+          req.onsuccess = () => resolve();
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      async function obtenerHandle() {
+        const db = await getDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, "readonly");
+          const store = tx.objectStore(STORE_NAME);
+          const req = store.get(DB_KEY);
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      async function borrarHandle() {
+        const db = await getDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, "readwrite");
+          const store = tx.objectStore(STORE_NAME);
+          const req = store.delete(DB_KEY);
+          req.onsuccess = () => resolve();
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      async function verificarPermiso(handle, readWrite = false) {
+        const opts = {};
+        if (readWrite) opts.mode = "readwrite";
+        try {
+          return (await handle.queryPermission(opts)) === "granted";
+        } catch (e) {
+          return false;
+        }
+      }
+
+      window.globalSync = {
+        dirHandle: null,
+        isScanning: false,
+        scanIntervalId: null,
+        status: "disconnected", // 'disconnected', 'needs_permission', 'syncing', 'active', 'error'
+        processedCount: parseInt(
+          localStorage.getItem("sync_processed_count") || "0",
+        ),
+
+        async init() {
+          try {
+            const handle = await obtenerHandle();
+            if (handle) {
+              this.dirHandle = handle;
+              const hasPermission = await verificarPermiso(handle);
+              if (hasPermission) {
+                this.updateStatus("active");
+                this.startPolling();
+              } else {
+                this.updateStatus("needs_permission");
+              }
+            } else {
+              this.updateStatus("disconnected");
+            }
+          } catch (e) {
+            console.error(
+              "Error al inicializar el motor de sincronización:",
+              e,
+            );
+            this.updateStatus("disconnected");
+          }
+        },
+
+        updateStatus(newStatus) {
+          this.status = newStatus;
+          window.dispatchEvent(
+            new CustomEvent("syncStatusChanged", {
+              detail: { status: newStatus },
+            }),
+          );
+        },
+
+        async start(handle) {
+          this.dirHandle = handle;
+          await guardarHandle(handle);
+          this.updateStatus("active");
+          this.startPolling();
+        },
+
+        async stop() {
+          this.stopPolling();
+          this.dirHandle = null;
+          await borrarHandle();
+          this.updateStatus("disconnected");
+        },
+
+        startPolling() {
+          if (this.scanIntervalId) clearInterval(this.scanIntervalId);
+          this.scanIntervalId = setInterval(() => this.scanDirectory(), 5000);
+          this.scanDirectory();
+        },
+
+        stopPolling() {
+          if (this.scanIntervalId) {
+            clearInterval(this.scanIntervalId);
+            this.scanIntervalId = null;
+          }
+        },
+
+        async scanDirectory() {
+          if (!this.dirHandle || this.isScanning) return;
+
+          const hasPerm = await verificarPermiso(this.dirHandle);
+          if (!hasPerm) {
+            this.stopPolling();
+            this.updateStatus("needs_permission");
+            this.logToPage(
+              `Acceso expirado o denegado por el navegador. Requiere re-autorización.`,
+              "warning",
+            );
+            return;
+          }
+
+          this.isScanning = true;
+          this.updateStatus("syncing");
+
+          try {
+            let filesUploaded = 0;
+            const currentScanKeys = new Set();
+
+            for await (const entry of this.dirHandle.values()) {
+              if (entry.kind === "file") {
+                const file = await entry.getFile();
+                const ext = file.name.split(".").pop().toLowerCase();
+                if (ext === "pdf" || ext === "xml") {
+                  const key = `synced_${file.name}_${file.size}_${file.lastModified}`;
+                  currentScanKeys.add(key);
+
+                  if (!localStorage.getItem(key)) {
+                    this.logToPage(
+                      `Detectado nuevo archivo local: <strong>${file.name}</strong>. Subiendo...`,
+                      "info",
+                    );
+
+                    const res = await this.uploadFile(file);
+                    if (res.exito) {
+                      localStorage.setItem(key, "true");
+                      filesUploaded++;
+                      this.processedCount++;
+                      localStorage.setItem(
+                        "sync_processed_count",
+                        this.processedCount,
+                      );
+                      this.logToPage(
+                        `Archivo subido exitosamente: <strong>${file.name}</strong>`,
+                        "success",
+                      );
+                      if (document.visibilityState === "visible") {
+                        window.mostrarNotificacion(res.mensaje, "success");
+                      }
+
+                      // Intentar eliminar el archivo local
+                      try {
+                        await this.dirHandle.removeEntry(file.name);
+                        this.logToPage(
+                          `Archivo local eliminado (procesado con éxito): <strong>${file.name}</strong>`,
+                          "system",
+                        );
+                      } catch (errRemove) {
+                        console.warn(
+                          "No se pudo eliminar el archivo local:",
+                          errRemove,
+                        );
+                        this.logToPage(
+                          `No se pudo borrar localmente "${file.name}": ${errRemove.message}`,
+                          "warning",
+                        );
+                      }
+                    } else {
+                      this.logToPage(
+                        `Fallo al subir: <strong>${file.name}</strong>. Motivo: ${res.mensaje}`,
+                        "error",
+                      );
+                      if (document.visibilityState === "visible") {
+                        window.mostrarNotificacion(res.mensaje, "danger");
+                      }
+
+                      // Si el archivo ya existe o fue ingresado previamente, lo eliminamos de todos modos para evitar bucles infinitos
+                      if (
+                        res.mensaje &&
+                        (res.mensaje.includes("ya fue ingresada") ||
+                          res.mensaje.includes("ya existe") ||
+                          res.mensaje.includes("duplicado"))
+                      ) {
+                        try {
+                          await this.dirHandle.removeEntry(file.name);
+                          this.logToPage(
+                            `Archivo local duplicado eliminado del disco: <strong>${file.name}</strong>`,
+                            "system",
+                          );
+                        } catch (errRemove) {
+                          console.warn(
+                            "No se pudo eliminar el duplicado local:",
+                            errRemove,
+                          );
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+
+            Object.keys(localStorage).forEach((key) => {
+              if (key.startsWith("synced_") && !currentScanKeys.has(key)) {
+                localStorage.removeItem(key);
+              }
+            });
+
+            this.updateStatus("active");
+            if (filesUploaded > 0 && window.pollSharedFolderGlobal) {
+              window.pollSharedFolderGlobal();
+            }
+          } catch (err) {
+            console.error("Error al escanear directorio:", err);
+            this.updateStatus("error");
+          } finally {
+            this.isScanning = false;
+          }
+        },
+
+        async uploadFile(file) {
+          const formData = new FormData();
+          formData.append("archivo", file);
+          formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+          try {
+            const response = await fetch('{% url "subir_a_compartida" %}', {
+              method: "POST",
+              body: formData,
+              headers: {
+                "X-Requested-With": "XMLHttpRequest",
+              },
+            });
+            if (!response.ok)
+              return { exito: false, mensaje: `Error HTTP ${response.status}` };
+            return await response.json();
+          } catch (error) {
+            return { exito: false, mensaje: error.message };
+          }
+        },
+
+        logToPage(msg, type) {
+          window.dispatchEvent(
+            new CustomEvent("syncLogAdded", { detail: { msg, type } }),
+          );
+        },
+      };
+
+      document.addEventListener("DOMContentLoaded", () => {
+        // --- LOGICA DE ALTERNANCIA DE TEMA (CLARO / OSCURO) ---
+        const themeToggles = document.querySelectorAll(".theme-toggle-input");
+        const themeIcons = {
+          desktop: document.getElementById("themeIconDesktop"),
+          mobile: document.getElementById("themeIconMobile"),
+        };
+        const themeTexts = {
+          desktop: document.getElementById("themeTextDesktop"),
+          mobile: document.getElementById("themeTextMobile"),
+        };
+        const metaThemeColor = document.querySelector(
+          'meta[name="theme-color"]',
+        );
+
+        const applyTheme = (theme) => {
+          document.documentElement.setAttribute("data-bs-theme", theme);
+          localStorage.setItem("theme", theme);
+
+          // Sincronizar switches
+          themeToggles.forEach((toggle) => {
+            toggle.checked = theme === "dark";
+          });
+
+          // Actualizar textos e iconos
+          if (theme === "dark") {
+            if (themeIcons.desktop)
+              themeIcons.desktop.className =
+                "bi bi-moon-stars-fill text-info me-1";
+            if (themeIcons.mobile)
+              themeIcons.mobile.className =
+                "bi bi-moon-stars-fill text-info me-1";
+            if (themeTexts.desktop)
+              themeTexts.desktop.textContent = "Modo Oscuro";
+            if (themeTexts.mobile)
+              themeTexts.mobile.textContent = "Modo Oscuro";
+            if (metaThemeColor)
+              metaThemeColor.setAttribute("content", "#111215");
+          } else {
+            if (themeIcons.desktop)
+              themeIcons.desktop.className = "bi bi-sun-fill text-warning me-1";
+            if (themeIcons.mobile)
+              themeIcons.mobile.className = "bi bi-sun-fill text-warning me-1";
+            if (themeTexts.desktop)
+              themeTexts.desktop.textContent = "Modo Claro";
+            if (themeTexts.mobile) themeTexts.mobile.textContent = "Modo Claro";
+            if (metaThemeColor)
+              metaThemeColor.setAttribute("content", "#ffffff");
+          }
+        };
+
+        // Establecer estado inicial del tema
+        const currentTheme = localStorage.getItem("theme") || "light";
+        applyTheme(currentTheme);
+
+        // Escuchar cambios en los interruptores
+        themeToggles.forEach((toggle) => {
+          toggle.addEventListener("change", (e) => {
+            const newTheme = e.target.checked ? "dark" : "light";
+            applyTheme(newTheme);
+          });
+        });
+
+        // --- INICIALIZADOR DE NOTIFICACIONES (TOASTS) ---
+        const toastElList = [].slice.call(
+          document.querySelectorAll(".toast:not(.d-none)"),
+        );
+        const toastList = toastElList.map(function (toastEl) {
+          return new bootstrap.Toast(toastEl);
+        });
+        toastList.forEach((toast) => toast.show());
+
+        // Función Global Externa para disparar notificaciones desde Javascript (Offline)
+        window.mostrarNotificacion = function (mensaje, tipo = "success") {
+          const container = document.querySelector(".toast-container");
+          const template = document
+            .getElementById("js-toast-template")
+            .cloneNode(true);
+          template.id = ""; // Limpiar ID del clon
+          template.classList.remove("d-none");
+
+          let iconCode = "bi-check-circle-fill";
+
+          if (tipo === "error" || tipo === "danger") {
+            template.classList.add("bg-danger");
+            iconCode = "bi-x-circle-fill";
+          } else if (tipo === "warning") {
+            template.classList.add("bg-warning", "text-dark");
+            iconCode = "bi-exclamation-triangle-fill";
+            template.classList.remove("text-white");
+          } else if (tipo === "info") {
+            template.classList.add("bg-info", "text-dark");
+            iconCode = "bi-info-circle-fill";
+            template.classList.remove("text-white");
+          } else {
+            template.classList.add("bg-success");
+          }
+
+          template.querySelector("#js-toast-body").innerHTML =
+            `<i class="bi ${iconCode} me-2 fs-5"></i> ${mensaje}`;
+
+          container.appendChild(template);
+          const ts = new bootstrap.Toast(template);
+          ts.show();
+
+          template.addEventListener("hidden.bs.toast", () => {
+            template.remove(); // Limpiar RAM
+          });
+        };
+
+        // --- Lógica Subida Archivos ---
+        const formUpload = document.getElementById("form-subir-documento");
+        if (formUpload) {
+          formUpload.addEventListener("submit", () => {
+            const btn = document.getElementById("btn-procesar-doc");
+            btn.disabled = true;
+            btn.innerHTML =
+              '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
+          });
+        }
+
+        // --- Polling Global del Buzón Compartido con Modal de Confirmación ---
+        const urlStatusCompartida = "/compartida/api/status/";
+        let lastStatusFilesState = null;
+        let lastPollTime = null;
+
+        // --- IndexedDB para almacenar FileSystemDirectoryHandle ---
+        const DB_NAME = "FileSystemSyncDB";
+        const STORE_NAME = "handles";
+        const DB_KEY = "local_folder";
 
         function getDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, 1);
-                request.onupgradeneeded = (e) => {
-                    const db = e.target.result;
-                    if (!db.objectStoreNames.contains(STORE_NAME)) {
-                        db.createObjectStore(STORE_NAME);
-                    }
-                };
-                request.onsuccess = (e) => resolve(e.target.result);
-                request.onerror = (e) => reject(e.target.error);
-            });
+          return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, 1);
+            request.onupgradeneeded = (e) => {
+              const db = e.target.result;
+              if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME);
+              }
+            };
+            request.onsuccess = (e) => resolve(e.target.result);
+            request.onerror = (e) => reject(e.target.error);
+          });
         }
 
         async function guardarHandle(handle) {
-            const db = await getDB();
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(STORE_NAME, 'readwrite');
-                const store = tx.objectStore(STORE_NAME);
-                const req = store.put(handle, DB_KEY);
-                req.onsuccess = () => resolve();
-                req.onerror = () => reject(req.error);
-            });
+          const db = await getDB();
+          return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, "readwrite");
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.put(handle, DB_KEY);
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+          });
         }
 
         async function obtenerHandle() {
-            const db = await getDB();
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(STORE_NAME, 'readonly');
-                const store = tx.objectStore(STORE_NAME);
-                const req = store.get(DB_KEY);
-                req.onsuccess = () => resolve(req.result);
-                req.onerror = () => reject(req.error);
-            });
+          const db = await getDB();
+          return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, "readonly");
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.get(DB_KEY);
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+          });
         }
 
         async function borrarHandle() {
-            const db = await getDB();
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(STORE_NAME, 'readwrite');
-                const store = tx.objectStore(STORE_NAME);
-                const req = store.delete(DB_KEY);
-                req.onsuccess = () => resolve();
-                req.onerror = () => reject(req.error);
-            });
+          const db = await getDB();
+          return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, "readwrite");
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.delete(DB_KEY);
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+          });
         }
 
         async function verificarPermiso(handle, readWrite = false) {
-            const opts = {};
-            if (readWrite) opts.mode = 'readwrite';
-            try {
-                return (await handle.queryPermission(opts)) === 'granted';
-            } catch (e) {
-                return false;
-            }
+          const opts = {};
+          if (readWrite) opts.mode = "readwrite";
+          try {
+            return (await handle.queryPermission(opts)) === "granted";
+          } catch (e) {
+            return false;
+          }
         }
 
-        window.globalSync = {
-            dirHandle: null,
-            isScanning: false,
-            scanIntervalId: null,
-            status: 'disconnected', // 'disconnected', 'needs_permission', 'syncing', 'active', 'error'
-            processedCount: parseInt(localStorage.getItem('sync_processed_count') || '0'),
-            
-            async init() {
-                try {
-                    const handle = await obtenerHandle();
-                    if (handle) {
-                        this.dirHandle = handle;
-                        const hasPermission = await verificarPermiso(handle);
-                        if (hasPermission) {
-                            this.updateStatus('active');
-                            this.startPolling();
-                        } else {
-                            this.updateStatus('needs_permission');
-                        }
-                    } else {
-                        this.updateStatus('disconnected');
-                    }
-                } catch (e) {
-                    console.error("Error al inicializar el motor de sincronización:", e);
-                    this.updateStatus('disconnected');
-                }
-            },
-            
-            updateStatus(newStatus) {
-                this.status = newStatus;
-                window.dispatchEvent(new CustomEvent('syncStatusChanged', { detail: { status: newStatus } }));
-            },
-            
-            async start(handle) {
-                this.dirHandle = handle;
-                await guardarHandle(handle);
-                this.updateStatus('active');
-                this.startPolling();
-            },
-            
-            async stop() {
-                this.stopPolling();
-                this.dirHandle = null;
-                await borrarHandle();
-                this.updateStatus('disconnected');
-            },
-            
-            startPolling() {
-                if (this.scanIntervalId) clearInterval(this.scanIntervalId);
-                this.scanIntervalId = setInterval(() => this.scanDirectory(), 5000);
-                this.scanDirectory();
-            },
-            
-            stopPolling() {
-                if (this.scanIntervalId) {
-                    clearInterval(this.scanIntervalId);
-                    this.scanIntervalId = null;
-                }
-            },
-            
-            async scanDirectory() {
-                if (!this.dirHandle || this.isScanning) return;
-                
-                const hasPerm = await verificarPermiso(this.dirHandle);
-                if (!hasPerm) {
-                    this.stopPolling();
-                    this.updateStatus('needs_permission');
-                    this.logToPage(`Acceso expirado o denegado por el navegador. Requiere re-autorización.`, 'warning');
-                    return;
-                }
+        // Arrays de seguimiento para evitar prompts repetitivos en la sesión
+        const archivosIgnorados = [];
+        const archivosProcesados = [];
+        let currentFile = null;
+        let fileProcessed = false;
+        let modalInstance = null;
 
-                this.isScanning = true;
-                this.updateStatus('syncing');
-                
-                try {
-                    let filesUploaded = 0;
-                    const currentScanKeys = new Set();
-                    
-                    for await (const entry of this.dirHandle.values()) {
-                        if (entry.kind === 'file') {
-                            const file = await entry.getFile();
-                            const ext = file.name.split('.').pop().toLowerCase();
-                            if (ext === 'pdf' || ext === 'xml') {
-                                const key = `synced_${file.name}_${file.size}_${file.lastModified}`;
-                                currentScanKeys.add(key);
-                                
-                                if (!localStorage.getItem(key)) {
-                                    this.logToPage(`Detectado nuevo archivo local: <strong>${file.name}</strong>. Subiendo...`, 'info');
-                                    
-                                    const res = await this.uploadFile(file);
-                                    if (res.exito) {
-                                        localStorage.setItem(key, 'true');
-                                        filesUploaded++;
-                                        this.processedCount++;
-                                        localStorage.setItem('sync_processed_count', this.processedCount);
-                                        this.logToPage(`Archivo subido exitosamente: <strong>${file.name}</strong>`, 'success');
-                                        if (document.visibilityState === 'visible') {
-                                            window.mostrarNotificacion(res.mensaje, 'success');
-                                        }
-                                        
-                                        // Intentar eliminar el archivo local
-                                        try {
-                                            await this.dirHandle.removeEntry(file.name);
-                                            this.logToPage(`Archivo local eliminado (procesado con éxito): <strong>${file.name}</strong>`, 'system');
-                                        } catch (errRemove) {
-                                            console.warn("No se pudo eliminar el archivo local:", errRemove);
-                                            this.logToPage(`No se pudo borrar localmente "${file.name}": ${errRemove.message}`, 'warning');
-                                        }
-                                    } else {
-                                        this.logToPage(`Fallo al subir: <strong>${file.name}</strong>. Motivo: ${res.mensaje}`, 'error');
-                                        if (document.visibilityState === 'visible') {
-                                            window.mostrarNotificacion(res.mensaje, 'danger');
-                                        }
-                                        
-                                        // Si el archivo ya existe o fue ingresado previamente, lo eliminamos de todos modos para evitar bucles infinitos
-                                        if (res.mensaje && (res.mensaje.includes("ya fue ingresada") || res.mensaje.includes("ya existe") || res.mensaje.includes("duplicado"))) {
-                                            try {
-                                                await this.dirHandle.removeEntry(file.name);
-                                                this.logToPage(`Archivo local duplicado eliminado del disco: <strong>${file.name}</strong>`, 'system');
-                                            } catch (errRemove) {
-                                                console.warn("No se pudo eliminar el duplicado local:", errRemove);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    Object.keys(localStorage).forEach(key => {
-                        if (key.startsWith('synced_') && !currentScanKeys.has(key)) {
-                            localStorage.removeItem(key);
-                        }
-                    });
-                    
-                    this.updateStatus('active');
-                    if (filesUploaded > 0 && window.pollSharedFolderGlobal) {
-                        window.pollSharedFolderGlobal();
-                    }
-                } catch (err) {
-                    console.error("Error al escanear directorio:", err);
-                    this.updateStatus('error');
-                } finally {
-                    this.isScanning = false;
-                }
-            },
-            
-            async uploadFile(file) {
-                const formData = new FormData();
-                formData.append('archivo', file);
-                formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-                
-                try {
-                    const response = await fetch('{% url "subir_a_compartida" %}', {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    });
-                    if (!response.ok) return { exito: false, mensaje: `Error HTTP ${response.status}` };
-                    return await response.json();
-                } catch (error) {
-                    return { exito: false, mensaje: error.message };
-                }
-            },
-            
-            logToPage(msg, type) {
-                window.dispatchEvent(new CustomEvent('syncLogAdded', { detail: { msg, type } }));
+        const modalEl = document.getElementById("modalConfirmacionCompartida");
+        const btnModalGuardar = document.getElementById("btn-modal-guardar");
+        const btnModalCancelar = document.getElementById("btn-modal-cancelar");
+        const txtModalFilename = document.getElementById(
+          "modal-compartida-filename",
+        );
+
+        if (modalEl) {
+          modalInstance = new bootstrap.Modal(modalEl);
+
+          // Escuchar el cierre del modal (backdrop, ESC, 'X')
+          modalEl.addEventListener("hidden.bs.modal", () => {
+            if (!fileProcessed && currentFile) {
+              console.log(
+                `[Modal] Archivo ignorado temporalmente: ${currentFile}`,
+              );
+              archivosIgnorados.push(currentFile);
             }
+            currentFile = null;
+            // Al cerrarse el modal, re-evaluamos inmediatamente si hay más archivos en cola
+            pollSharedFolderGlobal();
+          });
+        }
+
+        if (btnModalGuardar) {
+          btnModalGuardar.addEventListener("click", async () => {
+            if (!currentFile) return;
+            btnModalGuardar.disabled = true;
+            btnModalCancelar.disabled = true;
+            btnModalGuardar.innerHTML =
+              '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Guardando...';
+
+            try {
+              const formData = new FormData();
+              formData.append("filename", currentFile);
+              formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+              const response = await fetch(
+                '{% url "importar_factura_compartida" %}',
+                {
+                  method: "POST",
+                  body: formData,
+                  headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    Accept: "application/json",
+                  },
+                },
+              );
+
+              if (!response.ok) throw new Error(`HTTP ${response.status}`);
+              const resData = await response.json();
+
+              if (resData.exito) {
+                window.mostrarNotificacion(resData.mensaje, "success");
+                archivosProcesados.push(currentFile);
+                fileProcessed = true;
+                modalInstance.hide();
+              } else {
+                window.mostrarNotificacion(resData.mensaje, "danger");
+                // Si falla (por ejemplo duplicado), lo marcamos como procesado para no volver a preguntar
+                archivosProcesados.push(currentFile);
+                fileProcessed = true;
+                modalInstance.hide();
+              }
+            } catch (error) {
+              console.error("Error al guardar factura:", error);
+              window.mostrarNotificacion(
+                `Error al importar: ${error.message}`,
+                "danger",
+              );
+              // En caso de error de conexión, permitimos volver a intentarlo
+              btnModalGuardar.disabled = false;
+              btnModalCancelar.disabled = false;
+              btnModalGuardar.innerHTML =
+                '<i class="bi bi-check-circle-fill me-1"></i>Guardar en Sistema';
+            }
+          });
+        }
+
+        if (btnModalCancelar) {
+          btnModalCancelar.addEventListener("click", async () => {
+            if (!currentFile) return;
+            if (
+              !confirm(
+                `¿Está seguro de que desea eliminar permanentemente el archivo "${currentFile}" del buzón compartido?`,
+              )
+            )
+              return;
+
+            btnModalGuardar.disabled = true;
+            btnModalCancelar.disabled = true;
+            btnModalCancelar.innerHTML =
+              '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Eliminando...';
+
+            try {
+              const formData = new FormData();
+              formData.append("filename", currentFile);
+              formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+              const response = await fetch(
+                '{% url "eliminar_factura_compartida" %}',
+                {
+                  method: "POST",
+                  body: formData,
+                  headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    Accept: "application/json",
+                  },
+                },
+              );
+
+              if (!response.ok) throw new Error(`HTTP ${response.status}`);
+              const resData = await response.json();
+
+              if (resData.exito) {
+                window.mostrarNotificacion(resData.mensaje, "success");
+                archivosProcesados.push(currentFile);
+                fileProcessed = true;
+                modalInstance.hide();
+              } else {
+                window.mostrarNotificacion(resData.mensaje, "danger");
+                btnModalGuardar.disabled = false;
+                btnModalCancelar.disabled = false;
+                btnModalCancelar.innerHTML =
+                  '<i class="bi bi-trash3-fill me-1"></i>Cancelar (Eliminar)';
+              }
+            } catch (error) {
+              console.error("Error al eliminar factura:", error);
+              window.mostrarNotificacion(
+                `Error al eliminar: ${error.message}`,
+                "danger",
+              );
+              btnModalGuardar.disabled = false;
+              btnModalCancelar.disabled = false;
+              btnModalCancelar.innerHTML =
+                '<i class="bi bi-trash3-fill me-1"></i>Cancelar (Eliminar)';
+            }
+          });
+        }
+
+        const actualizarBadgesSidebar = (count) => {
+          const navLinks = document.querySelectorAll('a[href*="/compartida/"]');
+          navLinks.forEach((link) => {
+            let badge = link.querySelector(".badge-pending");
+            if (count > 0) {
+              if (badge) {
+                badge.textContent = count;
+              } else {
+                badge = document.createElement("span");
+                badge.className = "badge-pending";
+                badge.textContent = count;
+                link.appendChild(badge);
+              }
+            } else if (badge) {
+              badge.remove();
+            }
+          });
         };
 
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- LOGICA DE ALTERNANCIA DE TEMA (CLARO / OSCURO) ---
-            const themeToggles = document.querySelectorAll('.theme-toggle-input');
-            const themeIcons = {
-                desktop: document.getElementById('themeIconDesktop'),
-                mobile: document.getElementById('themeIconMobile')
-            };
-            const themeTexts = {
-                desktop: document.getElementById('themeTextDesktop'),
-                mobile: document.getElementById('themeTextMobile')
-            };
-            const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+        const pollSharedFolderGlobal = async () => {
+          if (window.isOfflineMode && window.isOfflineMode()) {
+            return;
+          }
+          try {
+            let url = urlStatusCompartida;
+            if (lastPollTime) {
+              url += `?since=${encodeURIComponent(lastPollTime)}`;
+            }
+            const response = await fetch(url);
+            if (!response.ok) {
+              throw new Error("Error al consultar el buzón compartido");
+            }
+            const data = await response.json();
 
-            const applyTheme = (theme) => {
-                document.documentElement.setAttribute('data-bs-theme', theme);
-                localStorage.setItem('theme', theme);
+            if (data.server_time) {
+              lastPollTime = data.server_time;
+            }
 
-                // Sincronizar switches
-                themeToggles.forEach(toggle => {
-                    toggle.checked = (theme === 'dark');
-                });
+            const count = data.cant_compartidas;
+            const facturas = data.facturas_compartidas;
+            const resultados = data.resultados_automaticos || [];
+            const notificaciones_tiempo_real =
+              data.notificaciones_tiempo_real || [];
 
-                // Actualizar textos e iconos
-                if (theme === 'dark') {
-                    if (themeIcons.desktop) themeIcons.desktop.className = 'bi bi-moon-stars-fill text-info me-1';
-                    if (themeIcons.mobile) themeIcons.mobile.className = 'bi bi-moon-stars-fill text-info me-1';
-                    if (themeTexts.desktop) themeTexts.desktop.textContent = 'Modo Oscuro';
-                    if (themeTexts.mobile) themeTexts.mobile.textContent = 'Modo Oscuro';
-                    if (metaThemeColor) metaThemeColor.setAttribute('content', '#111215');
-                } else {
-                    if (themeIcons.desktop) themeIcons.desktop.className = 'bi bi-sun-fill text-warning me-1';
-                    if (themeIcons.mobile) themeIcons.mobile.className = 'bi bi-sun-fill text-warning me-1';
-                    if (themeTexts.desktop) themeTexts.desktop.textContent = 'Modo Claro';
-                    if (themeTexts.mobile) themeTexts.mobile.textContent = 'Modo Claro';
-                    if (metaThemeColor) metaThemeColor.setAttribute('content', '#ffffff');
+            // Mostrar notificaciones de los resultados automáticos locales (solo si la pestaña está visible)
+            if (resultados.length > 0) {
+              let huboExito = false;
+              resultados.forEach((item) => {
+                if (document.visibilityState === "visible") {
+                  window.mostrarNotificacion(
+                    item.mensaje,
+                    item.exito ? "success" : "danger",
+                  );
                 }
-            };
+                if (item.exito) {
+                  huboExito = true;
+                }
+              });
 
-            // Establecer estado inicial del tema
-            const currentTheme = localStorage.getItem('theme') || 'light';
-            applyTheme(currentTheme);
+              // Si se procesó con éxito y estamos en páginas relevantes, recargar para mostrar los datos
+              if (huboExito) {
+                const path = window.location.pathname;
+                if (
+                  path === "/facturas/" ||
+                  path === "/compartida/" ||
+                  path === "/"
+                ) {
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 1500);
+                }
+              }
+            }
 
-            // Escuchar cambios en los interruptores
-            themeToggles.forEach(toggle => {
-                toggle.addEventListener('change', (e) => {
-                    const newTheme = e.target.checked ? 'dark' : 'light';
-                    applyTheme(newTheme);
-                });
+            // Mostrar notificaciones en tiempo real globales de otros procesos (solo si la pestaña está visible)
+            if (notificaciones_tiempo_real.length > 0) {
+              let huboExito = false;
+              notificaciones_tiempo_real.forEach((item) => {
+                if (document.visibilityState === "visible") {
+                  window.mostrarNotificacion(item.mensaje, item.tipo);
+                }
+                if (item.tipo === "success") {
+                  huboExito = true;
+                }
+              });
+
+              // Si hubo éxito y estamos en páginas relevantes, recargar para mostrar los datos
+              if (huboExito) {
+                const path = window.location.pathname;
+                if (
+                  path === "/facturas/" ||
+                  path === "/compartida/" ||
+                  path === "/"
+                ) {
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 1500);
+                }
+              }
+            }
+
+            // 1. Verificar si hay un nuevo archivo para el cual preguntar confirmación
+            if (modalInstance && facturas && facturas.length > 0) {
+              const fileToPrompt = facturas.find(
+                (f) =>
+                  !archivosIgnorados.includes(f.nombre) &&
+                  !archivosProcesados.includes(f.nombre),
+              );
+
+              if (fileToPrompt && currentFile === null) {
+                currentFile = fileToPrompt.nombre;
+                fileProcessed = false;
+
+                // Configurar modal
+                txtModalFilename.textContent = currentFile;
+                btnModalGuardar.disabled = false;
+                btnModalCancelar.disabled = false;
+                btnModalGuardar.innerHTML =
+                  '<i class="bi bi-check-circle-fill me-1"></i>Guardar en Sistema';
+                btnModalCancelar.innerHTML =
+                  '<i class="bi bi-trash3-fill me-1"></i>Cancelar (Eliminar)';
+
+                // Mostrar modal
+                modalInstance.show();
+              }
+            }
+
+            // 2. Actualizar los contadores visuales del sidebar en tiempo real
+            actualizarBadgesSidebar(count);
+
+            // 3. Disparar evento global para vistas reactivas (ej: lista_compartida.html)
+            const facturas_err = data.facturas_erroneas || [];
+            const stateStr = JSON.stringify({
+              facturas: facturas,
+              errores: facturas_err,
             });
-
-            // --- INICIALIZADOR DE NOTIFICACIONES (TOASTS) ---
-            const toastElList = [].slice.call(document.querySelectorAll('.toast:not(.d-none)'));
-            const toastList = toastElList.map(function (toastEl) {
-                return new bootstrap.Toast(toastEl);
-            });
-            toastList.forEach(toast => toast.show());
-
-            // Función Global Externa para disparar notificaciones desde Javascript (Offline)
-            window.mostrarNotificacion = function(mensaje, tipo = "success") {
-                const container = document.querySelector('.toast-container');
-                const template = document.getElementById('js-toast-template').cloneNode(true);
-                template.id = ""; // Limpiar ID del clon
-                template.classList.remove('d-none');
-                
-                let iconCode = "bi-check-circle-fill";
-                
-                if (tipo === "error" || tipo === "danger") { 
-                    template.classList.add("bg-danger"); 
-                    iconCode = "bi-x-circle-fill"; 
-                } else if (tipo === "warning") { 
-                    template.classList.add("bg-warning", "text-dark"); 
-                    iconCode = "bi-exclamation-triangle-fill"; 
-                    template.classList.remove('text-white'); 
-                } else if (tipo === "info") {
-                    template.classList.add("bg-info", "text-dark");
-                    iconCode = "bi-info-circle-fill";
-                    template.classList.remove('text-white'); 
-                } else {
-                    template.classList.add("bg-success");
-                }
-                
-                template.querySelector('#js-toast-body').innerHTML = `<i class="bi ${iconCode} me-2 fs-5"></i> ${mensaje}`;
-                
-                container.appendChild(template);
-                const ts = new bootstrap.Toast(template);
-                ts.show();
-                
-                template.addEventListener('hidden.bs.toast', () => {
-                    template.remove(); // Limpiar RAM
-                });
-            };
-
-            // --- Lógica Subida Archivos ---
-            const formUpload = document.getElementById('form-subir-documento');
-            if (formUpload) {
-                formUpload.addEventListener('submit', () => {
-                    const btn = document.getElementById('btn-procesar-doc');
-                    btn.disabled = true;
-                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
-                });
+            if (stateStr !== lastStatusFilesState) {
+              lastStatusFilesState = stateStr;
+              const event = new CustomEvent("sharedFolderUpdated", {
+                detail: {
+                  cant_compartidas: count,
+                  facturas_compartidas: facturas,
+                  facturas_erroneas: facturas_err,
+                  resultados_automaticos: resultados,
+                },
+              });
+              window.dispatchEvent(event);
             }
+          } catch (error) {
+            console.error(
+              "Error en el polling global del buzón compartido:",
+              error,
+            );
+          }
+        };
 
-            // --- Polling Global del Buzón Compartido con Modal de Confirmación ---
-            const urlStatusCompartida = '/compartida/api/status/';
-            let lastStatusFilesState = null;
-            let lastPollTime = null;
+        // Exponer la función de refresco de buzón al objeto global para el sincronizador local
+        window.pollSharedFolderGlobal = pollSharedFolderGlobal;
 
-            // --- IndexedDB para almacenar FileSystemDirectoryHandle ---
-            const DB_NAME = 'FileSystemSyncDB';
-            const STORE_NAME = 'handles';
-            const DB_KEY = 'local_folder';
-
-            function getDB() {
-                return new Promise((resolve, reject) => {
-                    const request = indexedDB.open(DB_NAME, 1);
-                    request.onupgradeneeded = (e) => {
-                        const db = e.target.result;
-                        if (!db.objectStoreNames.contains(STORE_NAME)) {
-                            db.createObjectStore(STORE_NAME);
-                        }
-                    };
-                    request.onsuccess = (e) => resolve(e.target.result);
-                    request.onerror = (e) => reject(e.target.error);
-                });
-            }
-
-            async function guardarHandle(handle) {
-                const db = await getDB();
-                return new Promise((resolve, reject) => {
-                    const tx = db.transaction(STORE_NAME, 'readwrite');
-                    const store = tx.objectStore(STORE_NAME);
-                    const req = store.put(handle, DB_KEY);
-                    req.onsuccess = () => resolve();
-                    req.onerror = () => reject(req.error);
-                });
-            }
-
-            async function obtenerHandle() {
-                const db = await getDB();
-                return new Promise((resolve, reject) => {
-                    const tx = db.transaction(STORE_NAME, 'readonly');
-                    const store = tx.objectStore(STORE_NAME);
-                    const req = store.get(DB_KEY);
-                    req.onsuccess = () => resolve(req.result);
-                    req.onerror = () => reject(req.error);
-                });
-            }
-
-            async function borrarHandle() {
-                const db = await getDB();
-                return new Promise((resolve, reject) => {
-                    const tx = db.transaction(STORE_NAME, 'readwrite');
-                    const store = tx.objectStore(STORE_NAME);
-                    const req = store.delete(DB_KEY);
-                    req.onsuccess = () => resolve();
-                    req.onerror = () => reject(req.error);
-                });
-            }
-
-            async function verificarPermiso(handle, readWrite = false) {
-                const opts = {};
-                if (readWrite) opts.mode = 'readwrite';
-                try {
-                    return (await handle.queryPermission(opts)) === 'granted';
-                } catch (e) {
-                    return false;
-                }
-            }
-
-            // Arrays de seguimiento para evitar prompts repetitivos en la sesión
-            const archivosIgnorados = [];
-            const archivosProcesados = [];
-            let currentFile = null;
-            let fileProcessed = false;
-            let modalInstance = null;
-
-            const modalEl = document.getElementById('modalConfirmacionCompartida');
-            const btnModalGuardar = document.getElementById('btn-modal-guardar');
-            const btnModalCancelar = document.getElementById('btn-modal-cancelar');
-            const txtModalFilename = document.getElementById('modal-compartida-filename');
-
-            if (modalEl) {
-                modalInstance = new bootstrap.Modal(modalEl);
-                
-                // Escuchar el cierre del modal (backdrop, ESC, 'X')
-                modalEl.addEventListener('hidden.bs.modal', () => {
-                    if (!fileProcessed && currentFile) {
-                        console.log(`[Modal] Archivo ignorado temporalmente: ${currentFile}`);
-                        archivosIgnorados.push(currentFile);
-                    }
-                    currentFile = null;
-                    // Al cerrarse el modal, re-evaluamos inmediatamente si hay más archivos en cola
-                    pollSharedFolderGlobal();
-                });
-            }
-
-            if (btnModalGuardar) {
-                btnModalGuardar.addEventListener('click', async () => {
-                    if (!currentFile) return;
-                    btnModalGuardar.disabled = true;
-                    btnModalCancelar.disabled = true;
-                    btnModalGuardar.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Guardando...';
-                    
-                    try {
-                        const formData = new FormData();
-                        formData.append('filename', currentFile);
-                        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-                        
-                        const response = await fetch('{% url "importar_factura_compartida" %}', {
-                            method: 'POST',
-                            body: formData,
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json'
-                            }
-                        });
-                        
-                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                        const resData = await response.json();
-                        
-                        if (resData.exito) {
-                            window.mostrarNotificacion(resData.mensaje, 'success');
-                            archivosProcesados.push(currentFile);
-                            fileProcessed = true;
-                            modalInstance.hide();
-                        } else {
-                            window.mostrarNotificacion(resData.mensaje, 'danger');
-                            // Si falla (por ejemplo duplicado), lo marcamos como procesado para no volver a preguntar
-                            archivosProcesados.push(currentFile);
-                            fileProcessed = true;
-                            modalInstance.hide();
-                        }
-                    } catch (error) {
-                        console.error('Error al guardar factura:', error);
-                        window.mostrarNotificacion(`Error al importar: ${error.message}`, 'danger');
-                        // En caso de error de conexión, permitimos volver a intentarlo
-                        btnModalGuardar.disabled = false;
-                        btnModalCancelar.disabled = false;
-                        btnModalGuardar.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Guardar en Sistema';
-                    }
-                });
-            }
-
-            if (btnModalCancelar) {
-                btnModalCancelar.addEventListener('click', async () => {
-                    if (!currentFile) return;
-                    if (!confirm(`¿Está seguro de que desea eliminar permanentemente el archivo "${currentFile}" del buzón compartido?`)) return;
-                    
-                    btnModalGuardar.disabled = true;
-                    btnModalCancelar.disabled = true;
-                    btnModalCancelar.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Eliminando...';
-                    
-                    try {
-                        const formData = new FormData();
-                        formData.append('filename', currentFile);
-                        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-                        
-                        const response = await fetch('{% url "eliminar_factura_compartida" %}', {
-                            method: 'POST',
-                            body: formData,
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json'
-                            }
-                        });
-                        
-                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                        const resData = await response.json();
-                        
-                        if (resData.exito) {
-                            window.mostrarNotificacion(resData.mensaje, 'success');
-                            archivosProcesados.push(currentFile);
-                            fileProcessed = true;
-                            modalInstance.hide();
-                        } else {
-                            window.mostrarNotificacion(resData.mensaje, 'danger');
-                            btnModalGuardar.disabled = false;
-                            btnModalCancelar.disabled = false;
-                            btnModalCancelar.innerHTML = '<i class="bi bi-trash3-fill me-1"></i>Cancelar (Eliminar)';
-                        }
-                    } catch (error) {
-                        console.error('Error al eliminar factura:', error);
-                        window.mostrarNotificacion(`Error al eliminar: ${error.message}`, 'danger');
-                        btnModalGuardar.disabled = false;
-                        btnModalCancelar.disabled = false;
-                        btnModalCancelar.innerHTML = '<i class="bi bi-trash3-fill me-1"></i>Cancelar (Eliminar)';
-                    }
-                });
-            }
-
-            const actualizarBadgesSidebar = (count) => {
-                const navLinks = document.querySelectorAll('a[href*="/compartida/"]');
-                navLinks.forEach(link => {
-                    let badge = link.querySelector('.badge-pending');
-                    if (count > 0) {
-                        if (badge) {
-                            badge.textContent = count;
-                        } else {
-                            badge = document.createElement('span');
-                            badge.className = 'badge-pending';
-                            badge.textContent = count;
-                            link.appendChild(badge);
-                        }
-                    } else if (badge) {
-                        badge.remove();
-                    }
-                });
-            };
-
-            const pollSharedFolderGlobal = async () => {
-                if (window.isOfflineMode && window.isOfflineMode()) {
-                    return;
-                }
-                try {
-                    let url = urlStatusCompartida;
-                    if (lastPollTime) {
-                        url += `?since=${encodeURIComponent(lastPollTime)}`;
-                    }
-                    const response = await fetch(url);
-                    if (!response.ok) {
-                        throw new Error('Error al consultar el buzón compartido');
-                    }
-                    const data = await response.json();
-                    
-                    if (data.server_time) {
-                        lastPollTime = data.server_time;
-                    }
-                    
-                    const count = data.cant_compartidas;
-                    const facturas = data.facturas_compartidas;
-                    const resultados = data.resultados_automaticos || [];
-                    const notificaciones_tiempo_real = data.notificaciones_tiempo_real || [];
-
-                    // Mostrar notificaciones de los resultados automáticos locales (solo si la pestaña está visible)
-                    if (resultados.length > 0) {
-                        let huboExito = false;
-                        resultados.forEach(item => {
-                            if (document.visibilityState === 'visible') {
-                                window.mostrarNotificacion(item.mensaje, item.exito ? 'success' : 'danger');
-                            }
-                            if (item.exito) {
-                                huboExito = true;
-                            }
-                        });
-                        
-                        // Si se procesó con éxito y estamos en páginas relevantes, recargar para mostrar los datos
-                        if (huboExito) {
-                            const path = window.location.pathname;
-                            if (path === '/facturas/' || path === '/compartida/' || path === '/') {
-                                setTimeout(() => {
-                                    window.location.reload();
-                                }, 1500);
-                            }
-                        }
-                    }
-
-                    // Mostrar notificaciones en tiempo real globales de otros procesos (solo si la pestaña está visible)
-                    if (notificaciones_tiempo_real.length > 0) {
-                        let huboExito = false;
-                        notificaciones_tiempo_real.forEach(item => {
-                            if (document.visibilityState === 'visible') {
-                                window.mostrarNotificacion(item.mensaje, item.tipo);
-                            }
-                            if (item.tipo === 'success') {
-                                huboExito = true;
-                            }
-                        });
-                        
-                        // Si hubo éxito y estamos en páginas relevantes, recargar para mostrar los datos
-                        if (huboExito) {
-                            const path = window.location.pathname;
-                            if (path === '/facturas/' || path === '/compartida/' || path === '/') {
-                                setTimeout(() => {
-                                    window.location.reload();
-                                }, 1500);
-                            }
-                        }
-                    }
-
-                    // 1. Verificar si hay un nuevo archivo para el cual preguntar confirmación
-                    if (modalInstance && facturas && facturas.length > 0) {
-                        const fileToPrompt = facturas.find(f => !archivosIgnorados.includes(f.nombre) && !archivosProcesados.includes(f.nombre));
-                        
-                        if (fileToPrompt && currentFile === null) {
-                            currentFile = fileToPrompt.nombre;
-                            fileProcessed = false;
-                            
-                            // Configurar modal
-                            txtModalFilename.textContent = currentFile;
-                            btnModalGuardar.disabled = false;
-                            btnModalCancelar.disabled = false;
-                            btnModalGuardar.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Guardar en Sistema';
-                            btnModalCancelar.innerHTML = '<i class="bi bi-trash3-fill me-1"></i>Cancelar (Eliminar)';
-                            
-                            // Mostrar modal
-                            modalInstance.show();
-                        }
-                    }
-
-                    // 2. Actualizar los contadores visuales del sidebar en tiempo real
-                    actualizarBadgesSidebar(count);
-
-                    // 3. Disparar evento global para vistas reactivas (ej: lista_compartida.html)
-                    const facturas_err = data.facturas_erroneas || [];
-                    const stateStr = JSON.stringify({ facturas: facturas, errores: facturas_err });
-                    if (stateStr !== lastStatusFilesState) {
-                        lastStatusFilesState = stateStr;
-                        const event = new CustomEvent('sharedFolderUpdated', { 
-                            detail: {
-                                cant_compartidas: count,
-                                facturas_compartidas: facturas,
-                                facturas_erroneas: facturas_err,
-                                resultados_automaticos: resultados
-                            } 
-                        });
-                        window.dispatchEvent(event);
-                    }
-                } catch (error) {
-                    console.error('Error en el polling global del buzón compartido:', error);
-                }
-            };
-
-            // Exponer la función de refresco de buzón al objeto global para el sincronizador local
-            window.pollSharedFolderGlobal = pollSharedFolderGlobal;
-
-            // Iniciar polling global a los 2 segundos de cargar la página y luego cada 5s
-            setTimeout(() => {
-                pollSharedFolderGlobal();
-                window.globalSync.init();
-                setInterval(pollSharedFolderGlobal, 5000);
-            }, 2000);
-        });
+        // Iniciar polling global a los 2 segundos de cargar la página y luego cada 5s
+        setTimeout(() => {
+          pollSharedFolderGlobal();
+          window.globalSync.init();
+          setInterval(pollSharedFolderGlobal, 5000);
+        }, 2000);
+      });
     </script>
-    
+
     <!-- Desactivar y eliminar Service Worker (PWA Offline) y limpiar caché local -->
     <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                for (let registration of registrations) {
-                    registration.unregister().then(function(boolean) {
-                        if (boolean) {
-                            console.log('ServiceWorker anterior desregistrado con éxito.');
-                        }
-                    });
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .getRegistrations()
+          .then(function (registrations) {
+            for (let registration of registrations) {
+              registration.unregister().then(function (boolean) {
+                if (boolean) {
+                  console.log(
+                    "ServiceWorker anterior desregistrado con éxito.",
+                  );
                 }
+              });
+            }
+          });
+      }
+      if ("caches" in window) {
+        caches.keys().then(function (names) {
+          for (let name of names) {
+            caches.delete(name).then(function () {
+              console.log("Caché eliminada:", name);
             });
-        }
-        if ('caches' in window) {
-            caches.keys().then(function(names) {
-                for (let name of names) {
-                    caches.delete(name).then(function() {
-                        console.log('Caché eliminada:', name);
-                    });
-                }
-            });
-        }
+          }
+        });
+      }
     </script>
 
     <!-- Script de Restauración Demo (JavaScript AJAX) -->
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const btnRestaurarDesktop = document.getElementById('btnRestaurarDemoDesktop');
-            const btnRestaurarMobile = document.getElementById('btnRestaurarDemoMobile');
+      document.addEventListener("DOMContentLoaded", () => {
+        const btnRestaurarDesktop = document.getElementById(
+          "btnRestaurarDemoDesktop",
+        );
+        const btnRestaurarMobile = document.getElementById(
+          "btnRestaurarDemoMobile",
+        );
 
-            const restaurarDemoDB = async () => {
-                const confirmacion = confirm("¿Estás seguro de que deseas restaurar la base de datos de demostración?\n\nEsta acción borrará todas las modificaciones, facturas subidas, clientes agregados y restaurará el inventario original.");
-                if (!confirmacion) return;
+        const restaurarDemoDB = async () => {
+          const confirmacion = confirm(
+            "¿Estás seguro de que deseas restaurar la base de datos de demostración?\n\nEsta acción borrará todas las modificaciones, facturas subidas, clientes agregados y restaurará el inventario original.",
+          );
+          if (!confirmacion) return;
 
-                const botones = [btnRestaurarDesktop, btnRestaurarMobile].filter(b => b !== null);
-                botones.forEach(btn => {
-                    btn.disabled = true;
-                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Restaurando...';
-                });
+          const botones = [btnRestaurarDesktop, btnRestaurarMobile].filter(
+            (b) => b !== null,
+          );
+          botones.forEach((btn) => {
+            btn.disabled = true;
+            btn.innerHTML =
+              '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Restaurando...';
+          });
 
+          try {
+            const response = await fetch("/api/demo/reset/", {
+              method: "POST",
+              headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "X-Requested-With": "XMLHttpRequest",
+                "Content-Type": "application/json",
+              },
+            });
+
+            if (!response.ok) {
+              throw new Error(`HTTP Error ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (data.exito) {
+              if (window.mostrarNotificacion) {
+                window.mostrarNotificacion(data.mensaje, "success");
+              } else {
+                alert(data.mensaje);
+              }
+              // Limpiar colas offline locales
+              if (window.DB) {
                 try {
-                    const response = await fetch('/api/demo/reset/', {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRFToken': '{{ csrf_token }}',
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP Error ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    if (data.exito) {
-                        if (window.mostrarNotificacion) {
-                            window.mostrarNotificacion(data.mensaje, "success");
-                        } else {
-                            alert(data.mensaje);
-                        }
-                        // Limpiar colas offline locales
-                        if (window.DB) {
-                            try {
-                                if (window.DB.limpiarQueueFacturas) {
-                                    await window.DB.limpiarQueueFacturas();
-                                }
-                                if (typeof localforage !== 'undefined') {
-                                    await localforage.setItem('despachos_sync_queue', []);
-                                    await localforage.setItem('generic_sync_queue', []);
-                                }
-                            } catch(e) {
-                                console.warn("No se pudo limpiar la IndexedDB local:", e);
-                            }
-                        }
-                        setTimeout(() => {
-                            window.location.href = '/';
-                        }, 2000);
-                    } else {
-                        throw new Error(data.mensaje || 'Error desconocido');
-                    }
-                } catch (error) {
-                    console.error('Error al restaurar demo:', error);
-                    if (window.mostrarNotificacion) {
-                        window.mostrarNotificacion(`Error: ${error.message}`, "danger");
-                    } else {
-                        alert(`Error al restaurar demo: ${error.message}`);
-                    }
-                    botones.forEach(btn => {
-                        btn.disabled = false;
-                        btn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i> Restaurar Demo';
-                    });
+                  if (window.DB.limpiarQueueFacturas) {
+                    await window.DB.limpiarQueueFacturas();
+                  }
+                  if (typeof localforage !== "undefined") {
+                    await localforage.setItem("despachos_sync_queue", []);
+                    await localforage.setItem("generic_sync_queue", []);
+                  }
+                } catch (e) {
+                  console.warn("No se pudo limpiar la IndexedDB local:", e);
                 }
-            };
+              }
+              setTimeout(() => {
+                window.location.href = "/";
+              }, 2000);
+            } else {
+              throw new Error(data.mensaje || "Error desconocido");
+            }
+          } catch (error) {
+            console.error("Error al restaurar demo:", error);
+            if (window.mostrarNotificacion) {
+              window.mostrarNotificacion(`Error: ${error.message}`, "danger");
+            } else {
+              alert(`Error al restaurar demo: ${error.message}`);
+            }
+            botones.forEach((btn) => {
+              btn.disabled = false;
+              btn.innerHTML =
+                '<i class="bi bi-arrow-counterclockwise"></i> Restaurar Demo';
+            });
+          }
+        };
 
-            if (btnRestaurarDesktop) btnRestaurarDesktop.addEventListener('click', restaurarDemoDB);
-            if (btnRestaurarMobile) btnRestaurarMobile.addEventListener('click', restaurarDemoDB);
-        });
+        if (btnRestaurarDesktop)
+          btnRestaurarDesktop.addEventListener("click", restaurarDemoDB);
+        if (btnRestaurarMobile)
+          btnRestaurarMobile.addEventListener("click", restaurarDemoDB);
+      });
     </script>
-    
-</body>
+  </body>
 </html>

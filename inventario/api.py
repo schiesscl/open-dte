@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.permissions import IsAuthenticated
 from .models import Cliente, Producto, Factura, DetalleFactura
 from .serializers import ClienteSerializer, ProductoSerializer, FacturaSerializer, DetalleFacturaSerializer
 from .utils import procesar_factura_pdf, procesar_factura_xml
@@ -10,6 +11,7 @@ class FacturaUploadAPIView(APIView):
     """
     Endpoint dedicado a recibir y parsear archivos PDF y XML de facturas desde PWA/Frontend.
     """
+    permission_classes = [IsAuthenticated]
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request, *args, **kwargs):
@@ -37,15 +39,19 @@ class FacturaUploadAPIView(APIView):
 class ClienteViewSet(viewsets.ModelViewSet):
     queryset = Cliente.objects.all()
     serializer_class = ClienteSerializer
+    permission_classes = [IsAuthenticated]
 
 class ProductoViewSet(viewsets.ModelViewSet):
     queryset = Producto.objects.all()
     serializer_class = ProductoSerializer
+    permission_classes = [IsAuthenticated]
 
 class FacturaViewSet(viewsets.ModelViewSet):
     queryset = Factura.objects.all()
     serializer_class = FacturaSerializer
+    permission_classes = [IsAuthenticated]
 
 class DetalleFacturaViewSet(viewsets.ModelViewSet):
     queryset = DetalleFactura.objects.all()
+    permission_classes = [IsAuthenticated]
     serializer_class = DetalleFacturaSerializer

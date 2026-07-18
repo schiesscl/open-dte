@@ -113,9 +113,17 @@ opendte/
 │   ├── serializers.py            # Serializadores DRF
 │   ├── utils.py                  # Parsers XML/PDF, lógica de negocio
 │   ├── config.py                 # Gestión de rutas de carpetas compartidas
-│   ├── context_processors.py     # Inyección de contexto global (badge buzón)
+│   ├── context_processors.py     # Inyección de contexto global (badge buzón, roles)
+│   ├── roles.py                  # Restricción de secciones por rol (vendedor/operario)
 │   ├── apps.py                   # Configuración de la app Django
-│   ├── tests.py                  # Suite de tests
+│   │
+│   ├── tests/                    # 🧪 Suite de tests (pytest)
+│   │   ├── conftest.py           # Fixtures compartidas
+│   │   ├── test_models.py        # Tests de modelos
+│   │   ├── test_views.py         # Tests de vistas
+│   │   ├── test_api.py           # Tests de la API REST
+│   │   ├── test_utils.py         # Tests de parsers/utilidades
+│   │   └── test_roles.py         # Tests del sistema de roles y permisos
 │   │
 │   ├── fixtures/                 # 📋 Datos de demostración
 │   │   └── demo_seed.json        # Fixture JSON con datos ficticios
@@ -543,13 +551,54 @@ OpenDTE fue diseñado para ser extendido y adaptado:
 
 1. **Multi-empresa:** Agregar un modelo `Empresa` y campo `empresa` en cada modelo.
 2. **Multi-país:** Adaptar los parsers XML/PDF a otros formatos de facturación electrónica.
-3. **Roles y permisos:** Implementar `@login_required` y grupos de usuarios (Admin, Operario, Vendedor).
+3. **Roles y permisos:** Ya implementado — ver sección [🔐 Roles y Control de Acceso](#-roles-y-control-de-acceso). Para agregar un nuevo rol restringido, basta con sumar una entrada a `ROLES_RESTRINGIDOS` en `inventario/roles.py`.
 4. **Integraciones:** Los endpoints REST permiten integración con ERP externos, apps móviles, etc.
 5. **Personalización visual:** Las CSS Variables permiten cambiar la paleta completa sin tocar componentes.
 
 ---
 
+## 🔐 Roles y Control de Acceso
+
+OpenDTE restringe el acceso a ciertas secciones según el **nombre de usuario**, de forma
+independiente a `MODO_DEMO` (la restricción aplica siempre, tanto en demo como en producción).
+
+- **`inventario/roles.py`** es la fuente única de verdad: define `ROLES_RESTRINGIDOS`
+  (mapeo `username → {secciones_bloqueadas, redirect}`), la función `secciones_bloqueadas_de(user)`
+  (usada por `context_processors.py` para exponer `secciones_bloqueadas` a todos los templates)
+  y el decorador `bloquear_seccion(seccion, mensaje=None)`.
+- Las vistas restringidas se protegen así:
+  ```python
+  @login_required
+  @bloquear_seccion('productos', 'No tienes acceso a esta sección.')
+  def editar_producto(request, producto_id):
+      ...
+  ```
+  `@login_required` siempre debe ir **por encima** de `@bloquear_seccion` (más externo).
+- En los templates, las secciones bloqueadas se ocultan del menú vía:
+  `{% if 'productos' not in secciones_bloqueadas %}...{% endif %}`.
+- **Todas** las vistas CRUD (crear/editar/eliminar productos, clientes, facturas y despacho)
+  exigen sesión iniciada (`@login_required`); antes de esta implementación varias de ellas
+  eran accesibles sin autenticación.
+- Los endpoints AJAX/JSON de uso interno (buzón compartido, importación de guías/Excel,
+  búsqueda de producto por código) **no** exigen `@login_required` todavía — quedan pendientes
+  de una revisión explícita antes de forzar esa restricción, ya que romper su contrato JSON
+  con una redirección HTML podría afectar la UI que los consume por AJAX.
+- La API REST (`inventario/api.py`) sólo exige autenticación (`IsAuthenticated`) — no aplica
+  todavía la restricción por rol; queda como trabajo futuro.
+
+---
+
 ## 📝 Changelog
+
+### v1.0.1 (Julio 2026)
+- Sistema de roles centralizado en `inventario/roles.py`, desacoplado de `MODO_DEMO`
+  (antes la restricción de secciones sólo aplicaba en modo demo).
+- Corrección de vistas CRUD sin `@login_required` (acceso anónimo no intencionado).
+- Menú de navegación (`base.html`) ahora oculta secciones según `secciones_bloqueadas`
+  expuesto por `context_processors.py`, en vez de lógica hardcodeada por username.
+- Nueva suite `inventario/tests/test_roles.py` con tests de unidad e integración del
+  sistema de roles.
+- `staticfiles/` (salida de `collectstatic`) agregado a `.gitignore`.
 
 ### v1.0.0 (Julio 2026) — Versión Inicial
 - Fork genérico del proyecto OpenDTE ERP.
