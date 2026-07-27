@@ -29,7 +29,11 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
 # Convierte la cadena separada por comas del archivo .env a una lista en Python
 allowed_hosts_env = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost')
-ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(',')]
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(',') if host.strip()]
+
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 
 # Application definition
@@ -65,6 +69,7 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -80,7 +85,21 @@ WSGI_APPLICATION = 'opendte_config.wsgi.application'
 # Database — PostgreSQL with SQLite fallback
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-if os.path.exists(os.path.join(BASE_DIR, '.env')):
+import urllib.parse as urlparse
+
+if os.environ.get('DATABASE_URL'):
+    url = urlparse.urlparse(os.environ.get('DATABASE_URL'))
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': url.path[1:],
+            'USER': url.username,
+            'PASSWORD': url.password,
+            'HOST': url.hostname,
+            'PORT': url.port or 5432,
+        }
+    }
+elif os.environ.get('DB_NAME') or os.path.exists(os.path.join(BASE_DIR, '.env')):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
