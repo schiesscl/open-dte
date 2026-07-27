@@ -33,12 +33,14 @@ class ProductoForm(forms.ModelForm):
             self.fields['codigo'].widget = forms.TextInput(attrs={'class': 'form-control bg-light', 'readonly': 'readonly'})
 
 
+from .utils import validar_rut_chileno, formatear_rut_chileno
+
 class ClienteForm(forms.ModelForm):
     class Meta:
         model = Cliente
         fields = ['rut', 'razon_social', 'giro', 'direccion', 'comuna', 'ciudad', 'telefono']
         widgets = {
-            'rut': forms.TextInput(attrs={'class': 'form-control bg-light', 'readonly': 'readonly'}),
+            'rut': forms.TextInput(attrs={'class': 'form-control rut-input'}),
             'razon_social': forms.TextInput(attrs={'class': 'form-control'}),
             'giro': forms.TextInput(attrs={'class': 'form-control'}),
             'direccion': forms.TextInput(attrs={'class': 'form-control'}),
@@ -46,6 +48,12 @@ class ClienteForm(forms.ModelForm):
             'ciudad': forms.TextInput(attrs={'class': 'form-control'}),
             'telefono': forms.TextInput(attrs={'class': 'form-control'}),
         }
+
+    def clean_rut(self):
+        rut = self.cleaned_data.get('rut', '').strip()
+        if rut and not validar_rut_chileno(rut):
+            raise forms.ValidationError("El RUT ingresado no es válido según el dígito verificador.")
+        return formatear_rut_chileno(rut)
 
 class FacturaForm(forms.ModelForm):
     class Meta:

@@ -1,18 +1,20 @@
-# 📦 OpenDTE — Sistema Genérico de Documentos Tributarios Electrónicos (DTE)
+# OpenDTE — Sistema Genérico de Documentos Tributarios Electrónicos (DTE)
 
 OpenDTE es una versión limpia, genérica y libre de datos sensibles de **Full-Sello ERP**, adaptada para ser compatible con PostgreSQL y optimizada para servir como base de un sistema de facturación electrónica y gestión de inventario en Chile.
 
-## 🚀 Características Clave
+## Características Clave
 
 - **Base de datos:** PostgreSQL en lugar de SQLite3.
 - **Demo Reset:** Restauración de base de datos desde el navegador mediante JavaScript/AJAX (sin necesidad de comandos Python).
 - **Procesamiento de Facturas:** Lectura volátil en memoria de PDFs y XMLs emitidos bajo el estándar del SII.
+- **Validación de RUT:** Verificación en tiempo real y backend mediante el algoritmo oficial Módulo 11 con formateo automático (XX.XXX.XXX-Y).
+- **Frontend Modular:** Arquitectura de scripts JavaScript dividida en módulos con responsabilidades únicas (validators.js, table-sort.js, excel-import.js, guia-abastecimiento.js).
 - **PWA Offline:** Capacidad de operar sin internet con IndexedDB (`localforage`) y sincronización automática.
-- **Diseño Accesible:** Cumplimiento con pautas básicas WCAG 2.1 para navegación por teclado y contraste.
+- **Diseño Accesible:** Cumplimiento con pautas básicas WCAG 2.1 para navegación por teclado y contraste adaptativo claro/oscuro.
 
 ---
 
-## 🛠️ Requisitos Previos
+## Requisitos Previos
 
 1. **Python 3.12+**
 2. **PostgreSQL 15+**
@@ -20,13 +22,13 @@ OpenDTE es una versión limpia, genérica y libre de datos sensibles de **Full-S
 
 ---
 
-## 🔧 Instalación y Puesta en Marcha
+## Instalación y Puesta en Marcha
 
 1. **Clonar e ingresar al proyecto:**
 
    ```bash
-   git clone <URL_DEL_REPOSITORIO>
-   cd opendte
+   git clone https://github.com/schiesscl/open-dte.git
+   cd open-dte
    ```
 
 2. **Crear y activar entorno virtual:**
@@ -82,10 +84,10 @@ OpenDTE es una versión limpia, genérica y libre de datos sensibles de **Full-S
 
 ---
 
-## 📖 Documentación Completa
+## Documentación Completa
 
 Para una descripción exhaustiva del diseño de base de datos, mapeo de componentes del fork, endpoints de la API, flujos de sincronización offline y arquitectura general, consulte el archivo [DOCUMENTACION.md](file:///e:/opendte/DOCUMENTACION.md).
 
-## 📜 Licencia
+## Licencia
 
 Este proyecto es de código abierto bajo la licencia MIT.

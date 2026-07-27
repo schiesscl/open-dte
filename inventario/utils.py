@@ -37,6 +37,45 @@ def calcular_dv(rut_sin_dv):
     else:
         return str(dv)
 
+def validar_rut_chileno(rut):
+    """
+    Valida si un RUT chileno (ej: '77.267.987-4', '772679874') es válido según el Módulo 11.
+    """
+    if not rut or not isinstance(rut, str):
+        return False
+
+    rut_limpio = rut.replace('.', '').replace('-', '').strip().upper()
+    if len(rut_limpio) < 2:
+        return False
+
+    cuerpo = rut_limpio[:-1]
+    dv_ingresado = rut_limpio[-1]
+
+    if not cuerpo.isdigit():
+        return False
+
+    dv_calculado = calcular_dv(cuerpo)
+    return dv_ingresado == dv_calculado
+
+def formatear_rut_chileno(rut):
+    """
+    Formatea un RUT string al estándar 'XX.XXX.XXX-Y'.
+    Retorna el mismo string si no es válido.
+    """
+    if not rut or not isinstance(rut, str):
+        return rut
+
+    rut_limpio = rut.replace('.', '').replace('-', '').strip().upper()
+    if len(rut_limpio) < 2 or not rut_limpio[:-1].isdigit():
+        return rut
+
+    cuerpo = rut_limpio[:-1]
+    dv = rut_limpio[-1]
+
+    # Formatear cuerpo con puntos
+    cuerpo_formateado = "{:,}".format(int(cuerpo)).replace(",", ".")
+    return f"{cuerpo_formateado}-{dv}"
+
 def limpiar_namespaces(root):
     """ El XML del SII trae 'namespaces' que complican la lectura. Esta función los elimina para facilitar la búsqueda. """
     for elem in root.iter():

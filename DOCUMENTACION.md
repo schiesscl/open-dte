@@ -1,28 +1,30 @@
-# 📄 OpenDTE — Sistema Genérico de Gestión de Documentos Tributarios Electrónicos
+# OpenDTE — Sistema Genérico de Gestión de Documentos Tributarios Electrónicos
 
-> **Versión:** 1.0.0  
-> **Basado en:** [OpenDTE ERP](https://github.com/schiesscl/opendte) — Sistema ERP interno de Comercial OpenDTE Ltda.  
-> **Licencia:** MIT  
-> **País objetivo inicial:** Chile 🇨🇱 (compatible con DTEs del SII)
+- **Versión:** 1.1.0
+- **Basado en:** OpenDTE ERP — Sistema ERP interno de Comercial OpenDTE Ltda.
+- **Licencia:** MIT
+- **País objetivo inicial:** Chile (compatible con DTEs del SII)
 
 ---
 
-## 📖 Descripción General
+## Descripción General
 
 **OpenDTE** es una plataforma web **genérica y de código abierto** para la gestión integral de **Documentos Tributarios Electrónicos (DTE)**, inventario de productos y despacho de mercadería. Fue diseñada para ser utilizada por **cualquier empresa chilena** que necesite procesar facturas electrónicas, guías de despacho y notas de crédito emitidas bajo el estándar del **Servicio de Impuestos Internos (SII)** de Chile.
 
 A diferencia del proyecto original (OpenDTE ERP), OpenDTE:
 
-- ✅ **No contiene datos reales** de ninguna empresa.
-- ✅ Utiliza **datos de demostración ficticios** que se restauran automáticamente.
-- ✅ Usa **PostgreSQL** como base de datos en lugar de SQLite.
-- ✅ Implementa el **reset de datos demo mediante JavaScript** (no Python).
-- ✅ Es **genérico y configurable** para adaptarse a cualquier empresa.
-- ✅ Sigue buenas prácticas de **accesibilidad (WCAG 2.1)**.
+- **No contiene datos reales** de ninguna empresa.
+- Utiliza **datos de demostración ficticios** que se restauran automáticamente.
+- Usa **PostgreSQL** como base de datos en lugar de SQLite.
+- Implementa el **reset de datos demo mediante JavaScript** (sin comandos Python).
+- Es **genérico y configurable** para adaptarse a cualquier empresa.
+- Implementa **validación rigurosa de RUT chileno (Módulo 11)** en frontend y backend.
+- Posee una **arquitectura JavaScript modular (Zero-Build)** desacoplada y mantenible.
+- Sigue buenas prácticas de **accesibilidad (WCAG 2.1)**.
 
 ---
 
-## 🔗 Relación con el Proyecto Original (OpenDTE ERP)
+## Relación con el Proyecto Original (OpenDTE ERP)
 
 OpenDTE nace como una **copia genérica y limpia** del proyecto `opendte`, manteniendo la misma arquitectura y estructura de archivos pero eliminando toda referencia a datos empresariales reales.
 
@@ -41,7 +43,7 @@ OpenDTE nace como una **copia genérica y limpia** del proyecto `opendte`, mante
 
 ---
 
-## 🛠️ Stack Tecnológico
+## Stack Tecnológico
 
 ### Backend
 | Tecnología | Versión | Propósito |
@@ -61,7 +63,7 @@ OpenDTE nace como una **copia genérica y limpia** del proyecto `opendte`, mante
 | **HTML5** | — | Estructura semántica |
 | **CSS3 / Bootstrap 5** | 5.3+ | Framework de diseño responsivo |
 | **Bootstrap Icons** | 1.11+ | Iconografía SVG |
-| **JavaScript ES6+** | Vanilla | Lógica del cliente, AJAX, PWA |
+| **JavaScript ES6+** | Vanilla | Lógica modular, Módulo 11, AJAX, PWA |
 | **localforage** | 1.10+ | Almacenamiento offline (IndexedDB) |
 
 ### Procesamiento de Documentos
@@ -81,12 +83,12 @@ OpenDTE nace como una **copia genérica y limpia** del proyecto `opendte`, mante
 
 ---
 
-## 📂 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 opendte/
 ├── manage.py                     # Entry point de Django
-├── DOCUMENTACION.md              # ← Este archivo
+├── DOCUMENTACION.md              # Este archivo de documentación
 ├── README.md                     # Guía rápida de instalación
 ├── requirements.txt              # Dependencias Python
 ├── package.json                  # Dependencias JavaScript
@@ -95,50 +97,51 @@ opendte/
 ├── .gitignore                    # Reglas de exclusión Git
 ├── config.json                   # Configuración de rutas compartidas
 │
-├── opendte_config/               # 🔧 Paquete de configuración Django
+├── opendte_config/               # Paquete de configuración Django
 │   ├── __init__.py
 │   ├── settings.py               # Configuración principal (PostgreSQL, apps, middleware)
 │   ├── urls.py                   # Rutas raíz (admin, API, app, PWA)
 │   ├── wsgi.py                   # WSGI para producción
 │   └── asgi.py                   # ASGI para producción
 │
-├── inventario/                   # 📦 App principal de Django
+├── inventario/                   # App principal de Django
 │   ├── __init__.py
 │   ├── models.py                 # Modelos de datos (Producto, Factura, Cliente, etc.)
 │   ├── views.py                  # Vistas basadas en funciones (Dashboard, CRUD, Despacho)
 │   ├── urls.py                   # Rutas de la app
-│   ├── forms.py                  # Formularios Django (ProductoForm, ClienteForm, FacturaForm)
+│   ├── forms.py                  # Formularios Django con validación de RUT Módulo 11
 │   ├── admin.py                  # Configuración del panel de administración
 │   ├── api.py                    # ViewSets DRF (REST API)
 │   ├── serializers.py            # Serializadores DRF
-│   ├── utils.py                  # Parsers XML/PDF, lógica de negocio
+│   ├── utils.py                  # Parsers XML/PDF, algoritmo Módulo 11, utilidades
 │   ├── config.py                 # Gestión de rutas de carpetas compartidas
 │   ├── context_processors.py     # Inyección de contexto global (badge buzón, roles)
 │   ├── roles.py                  # Restricción de secciones por rol (vendedor/operario)
 │   ├── apps.py                   # Configuración de la app Django
 │   │
-│   ├── tests/                    # 🧪 Suite de tests (pytest)
+│   ├── tests/                    # Suite de tests (pytest)
 │   │   ├── conftest.py           # Fixtures compartidas
 │   │   ├── test_models.py        # Tests de modelos
 │   │   ├── test_views.py         # Tests de vistas
 │   │   ├── test_api.py           # Tests de la API REST
 │   │   ├── test_utils.py         # Tests de parsers/utilidades
-│   │   └── test_roles.py         # Tests del sistema de roles y permisos
+│   │   ├── test_roles.py         # Tests del sistema de roles y permisos
+│   │   └── test_validators.py    # Tests del validador de RUT Módulo 11
 │   │
-│   ├── fixtures/                 # 📋 Datos de demostración
+│   ├── fixtures/                 # Datos de demostración
 │   │   └── demo_seed.json        # Fixture JSON con datos ficticios
 │   │
-│   ├── management/               # 🔨 Comandos de gestión
+│   ├── management/               # Comandos de gestión
 │   │   └── commands/
 │   │       ├── import_productos.py   # Importar productos desde Excel
 │   │       └── seed_demo.py          # Cargar datos demo desde fixture
 │   │
-│   ├── migrations/               # 🗃️ Migraciones de base de datos
+│   ├── migrations/               # Migraciones de base de datos
 │   │   └── ...
 │   │
-│   ├── templates/                # 🎨 Templates HTML
+│   ├── templates/                # Templates HTML
 │   │   └── inventario/
-│   │       ├── base.html             # Layout principal (sidebar, navbar, PWA)
+│   │       ├── base.html             # Layout principal (sidebar, navbar, PWA, modular JS)
 │   │       ├── dashboard.html        # Panel de control con métricas
 │   │       ├── lista_productos.html  # Inventario (tabla, filtros, acciones)
 │   │       ├── lista_facturas.html   # Registro de documentos tributarios
@@ -147,7 +150,7 @@ opendte/
 │   │       ├── despacho.html         # Módulo de despacho de mercadería
 │   │       ├── editar_producto.html  # Formulario de edición de producto
 │   │       ├── editar_producto_masivo.html # Edición masiva de productos
-│   │       ├── editar_cliente.html   # Formulario de edición de cliente
+│   │       ├── editar_cliente.html   # Formulario de edición de cliente con validación RUT
 │   │       ├── editar_factura.html   # Formulario de edición de factura
 │   │       ├── facturas_cliente.html # Facturas pendientes por cliente
 │   │       ├── guia_despacho.html    # Vista de guía de despacho para impresión
@@ -155,18 +158,21 @@ opendte/
 │   │       ├── modal_factura.html    # Modal para ver detalle de factura
 │   │       └── stock_vendedores.html # Vista simplificada para vendedores
 │   │
-│   └── templatetags/             # 🏷️ Filtros de template personalizados
+│   └── templatetags/             # Filtros de template personalizados
 │       ├── __init__.py
 │       └── custom_filters.py     # price_format (separador de miles chileno)
 │
-├── static/                       # 🎨 Archivos estáticos
+├── static/                       # Archivos estáticos
 │   ├── css/
 │   │   ├── bootstrap.min.css     # Bootstrap 5 compilado
 │   │   ├── bootstrap-icons.css   # Bootstrap Icons
 │   │   └── style.css             # Estilos personalizados (tema claro/oscuro)
 │   ├── js/
-│   │   ├── bootstrap.bundle.min.js # Bootstrap 5 JS
-│   │   ├── inventario.js         # Lógica principal del frontend
+│   │   ├── validators.js         # Módulo de validación RUT Módulo 11 y auto-formateo
+│   │   ├── table-sort.js         # Módulo de ordenación de columnas y filtros de tabla
+│   │   ├── excel-import.js       # Módulo de importación y mapeo masivo desde Excel
+│   │   ├── guia-abastecimiento.js # Módulo de parsing e incremento por guías
+│   │   ├── inventario.js         # Script orquestador principal del frontend
 │   │   ├── api.js                # Sincronización offline y API calls
 │   │   ├── offline-db.js         # Configuración de IndexedDB (localforage)
 │   │   └── localforage.min.js    # Librería de almacenamiento offline
@@ -174,7 +180,7 @@ opendte/
 │       ├── logo.webp             # Logo genérico
 │       └── favicon.ico           # Favicon genérico
 │
-└── media/                        # 📁 Archivos subidos por usuarios (dinámico)
+└── media/                        # Archivos subidos por usuarios (dinámico)
     ├── compartida/               # Buzón de entrada de facturas
     ├── compartida_procesadas/    # Facturas procesadas con éxito
     └── compartida_errores/       # Facturas con errores de procesamiento
@@ -182,7 +188,7 @@ opendte/
 
 ---
 
-## 🏗️ Arquitectura de la Aplicación
+## Arquitectura de la Aplicación
 
 ### Patrón MTV (Model-Template-View)
 
@@ -190,8 +196,8 @@ opendte/
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         NAVEGADOR (Cliente)                        │
 │  ┌─────────────┐  ┌──────────────┐  ┌───────────────────────────┐  │
-│  │ Bootstrap 5  │  │  Vanilla JS  │  │   PWA (Service Workers)   │  │
-│  │   + Icons    │  │  + AJAX      │  │   + localforage           │  │
+│  │ Bootstrap 5  │  │ Vanilla JS   │  │   PWA (Service Workers)   │  │
+│  │  + Icons    │  │ (Modulares)  │  │   + localforage           │  │
 │  └─────────────┘  └──────────────┘  └───────────────────────────┘  │
 └─────────────────────────────┬───────────────────────────────────────┘
                               │ HTTP/HTTPS
@@ -222,20 +228,21 @@ opendte/
 │  │  - procesar_factura_xml() → Parser XML del SII (DTE)          │  │
 │  │  - procesar_factura_pdf() → Parser PDF impreso (pdfplumber)   │  │
 │  │  - parsear_guia_abastecimiento() → Parser Guías XML/PDF       │  │
-│  │  - calcular_dv() → Validación RUT chileno                     │  │
+│  │  - validar_rut_chileno() → Algoritmo Módulo 11                │  │
+│  │  - formatear_rut_chileno() → Formateador de RUT (XX.XXX.XXX-Y)│  │
 │  └────────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📊 Modelos de Datos
+## Modelos de Datos
 
 ### Diagrama Entidad-Relación
 
 ```
 ┌───────────────────────┐          ┌───────────────────────┐
-│       Sucursal         │          │       Bodega           │
+│       Sucursal        │          │       Bodega          │
 ├───────────────────────┤          ├───────────────────────┤
 │ id (PK)               │ 1    N   │ id (PK)               │
 │ nombre (unique)       │◄────────│ nombre                │
@@ -246,10 +253,10 @@ opendte/
 └───────────────────────┘          └───────────────────────┘
 
 ┌───────────────────────┐          ┌───────────────────────┐
-│       Cliente          │          │       Producto         │
+│       Cliente         │          │       Producto        │
 ├───────────────────────┤          ├───────────────────────┤
 │ id (PK)               │          │ id (PK)               │
-│ rut (unique)          │          │ codigo (unique)       │
+│ rut (unique, mod11)   │          │ codigo (unique)       │
 │ razon_social          │          │ codigo_alternativo    │
 │ giro                  │          │ cant_alternativo      │
 │ direccion             │          │ codigo_alternativo_2  │
@@ -261,7 +268,7 @@ opendte/
          │                         │ stock_actual          │
          │ N                       │ stock_real            │
 ┌────────▼──────────────┐          │ stock_minimo          │
-│       Factura          │          │ stock_sistema         │
+│       Factura         │          │ stock_sistema         │
 ├───────────────────────┤          │ precio_venta          │
 │ id (PK)               │          │ activo                │
 │ usuario_creador (FK)  │          │ fecha_creacion        │
@@ -270,7 +277,7 @@ opendte/
 │ fecha_emision         │                   │
 │ cliente_id (FK)       │                   │
 │ neto                  │          ┌────────▼──────────────┐
-│ iva                   │          │   DetalleFactura       │
+│ iva                   │          │   DetalleFactura      │
 │ total                 │          ├───────────────────────┤
 │ fecha_subida          │ 1    N   │ id (PK)               │
 │ archivo_origen        │◄────────│ factura_id (FK)       │
@@ -280,8 +287,8 @@ opendte/
          │                         │ total_linea           │
          │ 1                       └───────────────────────┘
 ┌────────▼──────────────┐
-│       Despacho         │          ┌───────────────────────┐
-├───────────────────────┤          │   HistorialStock       │
+│       Despacho        │          ┌───────────────────────┐
+├───────────────────────┤          │   HistorialStock      │
 │ id (PK)               │          ├───────────────────────┤
 │ factura_id (FK, 1:1)  │          │ id (PK)               │
 │ usuario_id (FK)       │          │ producto_id (FK)      │
@@ -289,7 +296,7 @@ opendte/
 └───────────────────────┘          │ stock_actual_anterior │
                                    │ stock_actual_nuevo    │
 ┌───────────────────────┐          │ stock_real_anterior   │
-│ GuíaAbastecimiento     │          │ stock_real_nuevo      │
+│ GuíaAbastecimiento    │          │ stock_real_nuevo      │
 ├───────────────────────┤          │ detalle               │
 │ id (PK)               │          │ usuario_id (FK)       │
 │ numero (unique)       │          └───────────────────────┘
@@ -299,7 +306,7 @@ opendte/
          │ 1
          │ N
 ┌────────▼──────────────┐
-│ DetalleGuíaAbastec.    │
+│ DetalleGuíaAbastec.   │
 ├───────────────────────┤
 │ id (PK)               │
 │ guia_id (FK)          │
@@ -310,7 +317,7 @@ opendte/
 
 ---
 
-## ⚡ Características Principales
+## Características Principales
 
 ### 1. Panel de Control (Dashboard)
 - Métricas consolidadas por período (ventas, facturas, guías, notas de crédito).
@@ -326,62 +333,73 @@ opendte/
 - Historial de modificaciones de stock con trazabilidad de usuario.
 - Importación desde archivos Excel con mapeo de columnas dinámico.
 
-### 3. Procesamiento de Documentos Tributarios (DTE)
+### 3. Validación de RUT Chileno (Módulo 11)
+- **Algoritmo Módulo 11 oficial:** Comprobación del dígito verificador para RUTs de empresas y personas.
+- **Auto-formateo en vivo:** Transforma automáticamente entradas numéricas como `772679874` a la convención estándar `77.267.987-4`.
+- **Feedback visual instantáneo:** Aplica clases Bootstrap `is-valid` (borde verde) e `is-invalid` (borde rojo) mientras el usuario escribe.
+- **Validación backend estricta:** `ClienteForm.clean_rut()` en Django valida el RUT antes de guardar en la base de datos, rechazando entradas inválidas.
+
+### 4. Arquitectura JS Modular (Zero-Build)
+- División del frontend en módulos especializados de JavaScript vanilla.
+- **validators.js:** Validación y formateo de RUT.
+- **table-sort.js:** Ordenación por columnas y búsqueda multipalabra.
+- **excel-import.js:** Interfaz drag & drop y mapeo para Excel.
+- **guia-abastecimiento.js:** Interfaz para el ingreso e incremento por guías.
+- **inventario.js:** Script orquestador simplificado.
+
+### 5. Procesamiento de Documentos Tributarios (DTE)
 - **XML del SII:** Parsing automático de DTEs electrónicos (Tipo 33, 34, 52, 61).
 - **PDF impreso:** Extracción de datos de facturas escaneadas con regex avanzados.
-- **Tipos soportados:**
-  - Factura Electrónica (Tipo 33)
-  - Factura Electrónica Exenta (Tipo 34)
-  - Guía de Despacho (Tipo 52)
-  - Nota de Crédito (Tipo 61)
+- **Tipos soportados:** Factura Electrónica (Tipo 33), Exenta (Tipo 34), Guía de Despacho (Tipo 52) y Nota de Crédito (Tipo 61).
 - Detección de duplicados por número + tipo de documento.
 - Creación automática de clientes a partir de datos del DTE.
 - Modificación automática de stock según tipo de documento.
 
-### 4. Despacho de Mercadería
+### 6. Despacho de Mercadería
 - Buscador de facturas pendientes por número.
 - Confirmación de despacho con descuento automático de stock.
 - Historial de despachos con registro de usuario y fecha.
 - Generación de guías de despacho para impresión.
+- Visibilidad permanente del menú lateral en todas las vistas de despacho.
 
-### 5. Buzón Compartido (Carpeta Compartida)
+### 7. Buzón Compartido (Carpeta Compartida)
 - Monitoreo de carpeta local/red para facturas depositadas.
 - Procesamiento automático con clasificación en éxito/error.
 - Archivos `.err` con registro del motivo de fallo.
 - Subida manual vía AJAX desde el navegador.
 - Configuración dinámica de rutas de carpetas.
 
-### 6. Guías de Abastecimiento
+### 8. Guías de Abastecimiento
 - Parsing de guías de traslado (XML/PDF) con coincidencia de productos.
 - Incremento automático de stock al confirmar una guía de entrada.
 - Historial de guías procesadas con detalle de productos.
 
-### 7. API REST
+### 9. API REST
 - Endpoints CRUD para Clientes, Productos, Facturas y Detalles.
 - Endpoint de subida de archivos (PDF/XML) vía API.
 - Respuestas JSON para integración con sistemas externos.
 
-### 8. PWA (Progressive Web App)
+### 10. PWA (Progressive Web App)
 - Service Worker con estrategia Network-First y fallback offline.
 - Botón "Preparar Offline" para pre-cargar assets.
-- Cola de operaciones pendientes en IndexedDB (localforage).
+- Cola de operaciones pendientes en IndexedDB (`localforage`).
 - Sincronización automática al recuperar conexión.
 
-### 9. Sistema de Reset Demo (JavaScript)
+### 11. Sistema de Reset Demo (JavaScript)
 - Endpoint API para restaurar datos de demostración.
 - Frontend JavaScript que invoca el reset sin recarga completa.
 - Datos ficticios sin información real de empresas.
 - Restauración de productos, clientes, facturas y despachos a su estado original.
 
-### 10. Temas (Claro/Oscuro)
+### 12. Temas (Claro/Oscuro)
 - Soporte nativo de tema claro y oscuro.
 - Switch en sidebar para cambiar de tema.
-- Persistencia de preferencia en localStorage.
+- Persistencia de preferencia en `localStorage`.
 - CSS Variables para tematización completa.
 
 ---
 
-## 🔧 Configuración y Despliegue
+## Configuración y Despliegue
 
 ### Variables de Entorno (.env)
 
@@ -409,8 +427,8 @@ DB_PORT=5432
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/tu-usuario/opendte.git
-cd opendte
+git clone https://github.com/schiesscl/open-dte.git
+cd open-dte
 
 # 2. Crear y activar entorno virtual
 python -m venv env
@@ -427,10 +445,8 @@ npm install
 
 # 5. Configurar variables de entorno
 cp .env.example .env
-# Editar .env con tus datos
 
 # 6. Crear la base de datos PostgreSQL
-# (Asegúrate de tener PostgreSQL corriendo)
 # En psql:
 # CREATE DATABASE opendte_db;
 # CREATE USER opendte_user WITH PASSWORD 'tu-contraseña';
@@ -451,7 +467,7 @@ python manage.py runserver
 
 ---
 
-## 🎨 Diseño y UI/UX
+## Diseño y UI/UX
 
 ### Sistema de Diseño
 - **Framework:** Bootstrap 5.3 con tema personalizado.
@@ -459,36 +475,36 @@ python manage.py runserver
 - **Layout:** Sidebar fijo en escritorio, offcanvas en móvil.
 - **Tipografía:** Hereda del sistema operativo (system-ui).
 - **Paleta de colores:**
-  - **Primario:** `#F9EA15` (amarillo corporativo, configurable).
+  - **Primario:** `#F9EA15` (amarillo corporativo).
   - **Fondo claro:** `#f4f6f9` / **Fondo oscuro:** `#121316`.
   - **Cards:** `#ffffff` (claro) / `#1e2025` (oscuro).
   - **Sidebar:** `#ffffff` (claro) / `#111215` (oscuro).
 
 ### Componentes Reutilizables
-1. **Sidebar** — Navegación principal con ítems activos y badge de buzón.
+1. **Sidebar** — Navegación principal con ítems activos, badge de buzón y firma del autor.
 2. **Cards métricas** — Dashboard con indicadores y sub-indicadores.
-3. **Tablas responsivas** — Con filtrado, búsqueda y acciones por fila.
+3. **Tablas responsivas** — Con filtrado multipalabra, ordenación por columna y acciones por fila.
 4. **Modales** — Para CRUD, subida de archivos y confirmaciones.
 5. **Toasts** — Notificaciones en tiempo real (éxito/error).
-6. **Formularios** — Bootstrap forms con validación frontend y backend.
+6. **Formularios** — Bootstrap forms con validación de RUT en tiempo real y backend.
 
 ---
 
-## 🌐 Accesibilidad (WCAG 2.1)
+## Accesibilidad (WCAG 2.1)
 
 OpenDTE implementa las siguientes mejoras de accesibilidad respecto al proyecto original:
 
-- **Atributos ARIA** en navegación, modales y formularios.
-- **Labels** descriptivos en todos los inputs de formularios.
-- **Contraste** de colores verificado para ambos temas.
-- **Navegación por teclado** soportada en todos los elementos interactivos.
-- **Texto alternativo** en imágenes y logos.
-- **Focus visible** personalizado para elementos interactivos.
-- **Landmark roles** semánticos (`main`, `nav`, `aside`, `header`).
+- Atributos ARIA en navegación, modales y formularios.
+- Labels descriptivos en todos los inputs de formularios.
+- Contraste de colores verificado para ambos temas (claro/oscuro).
+- Navegación por teclado soportada en todos los elementos interactivos.
+- Texto alternativo en imágenes y logos.
+- Focus visible personalizado para elementos interactivos.
+- Landmark roles semánticos (`main`, `nav`, `aside`, `header`).
 
 ---
 
-## 🗺️ Rutas y Endpoints
+## Rutas y Endpoints
 
 ### Vistas Web (Frontend)
 | Ruta | Vista | Descripción |
@@ -501,7 +517,7 @@ OpenDTE implementa las siguientes mejoras de accesibilidad respecto al proyecto 
 | `/productos/eliminar/<id>/` | `eliminar_producto` | Eliminar producto |
 | `/stock-vendedores/` | `stock_vendedores` | Vista simplificada para vendedores |
 | `/clientes/` | `lista_clientes` | Directorio de clientes |
-| `/clientes/editar/<id>/` | `editar_cliente` | Editar cliente |
+| `/clientes/editar/<id>/` | `editar_cliente` | Editar cliente (con validación de RUT) |
 | `/clientes/eliminar/<id>/` | `eliminar_cliente` | Eliminar cliente |
 | `/facturas/` | `lista_facturas` | Registro histórico de documentos |
 | `/facturas/editar/<id>/` | `editar_factura` | Editar factura |
@@ -541,64 +557,41 @@ OpenDTE implementa las siguientes mejoras de accesibilidad respecto al proyecto 
 | POST | `/productos/guia/procesar/` | Procesar guía confirmada |
 | POST | `/productos/importar-excel/analizar/` | Analizar Excel para importación |
 | POST | `/productos/importar-excel/procesar/` | Ejecutar importación Excel |
-| POST | `/api/demo/reset/` | **Restaurar datos de demostración** |
+| POST | `/api/demo/reset/` | Restaurar datos de demostración |
 
 ---
 
-## 🧩 Extensibilidad
+## Roles y Control de Acceso
 
-OpenDTE fue diseñado para ser extendido y adaptado:
+OpenDTE restringe el acceso a ciertas secciones según el **nombre de usuario**, de forma independiente a `MODO_DEMO`.
 
-1. **Multi-empresa:** Agregar un modelo `Empresa` y campo `empresa` en cada modelo.
-2. **Multi-país:** Adaptar los parsers XML/PDF a otros formatos de facturación electrónica.
-3. **Roles y permisos:** Ya implementado — ver sección [🔐 Roles y Control de Acceso](#-roles-y-control-de-acceso). Para agregar un nuevo rol restringido, basta con sumar una entrada a `ROLES_RESTRINGIDOS` en `inventario/roles.py`.
-4. **Integraciones:** Los endpoints REST permiten integración con ERP externos, apps móviles, etc.
-5. **Personalización visual:** Las CSS Variables permiten cambiar la paleta completa sin tocar componentes.
+- **`inventario/roles.py`** es la fuente única de verdad: define `ROLES_RESTRINGIDOS` (mapeo `username → {secciones_bloqueadas, redirect}`), la función `secciones_bloqueadas_de(user)` y el decorador `@bloquear_seccion(seccion, mensaje=None)`.
+- Las vistas restringidas se protegen exigiendo `@login_required` antes de `@bloquear_seccion`.
+- En los templates, las secciones bloqueadas se ocultan del menú mediante `{% if 'productos' not in secciones_bloqueadas %}...{% endif %}`.
 
 ---
 
-## 🔐 Roles y Control de Acceso
+## Changelog
 
-OpenDTE restringe el acceso a ciertas secciones según el **nombre de usuario**, de forma
-independiente a `MODO_DEMO` (la restricción aplica siempre, tanto en demo como en producción).
-
-- **`inventario/roles.py`** es la fuente única de verdad: define `ROLES_RESTRINGIDOS`
-  (mapeo `username → {secciones_bloqueadas, redirect}`), la función `secciones_bloqueadas_de(user)`
-  (usada por `context_processors.py` para exponer `secciones_bloqueadas` a todos los templates)
-  y el decorador `bloquear_seccion(seccion, mensaje=None)`.
-- Las vistas restringidas se protegen así:
-  ```python
-  @login_required
-  @bloquear_seccion('productos', 'No tienes acceso a esta sección.')
-  def editar_producto(request, producto_id):
-      ...
-  ```
-  `@login_required` siempre debe ir **por encima** de `@bloquear_seccion` (más externo).
-- En los templates, las secciones bloqueadas se ocultan del menú vía:
-  `{% if 'productos' not in secciones_bloqueadas %}...{% endif %}`.
-- **Todas** las vistas CRUD (crear/editar/eliminar productos, clientes, facturas y despacho)
-  exigen sesión iniciada (`@login_required`); antes de esta implementación varias de ellas
-  eran accesibles sin autenticación.
-- Los endpoints AJAX/JSON de uso interno (buzón compartido, importación de guías/Excel,
-  búsqueda de producto por código) **no** exigen `@login_required` todavía — quedan pendientes
-  de una revisión explícita antes de forzar esa restricción, ya que romper su contrato JSON
-  con una redirección HTML podría afectar la UI que los consume por AJAX.
-- La API REST (`inventario/api.py`) sólo exige autenticación (`IsAuthenticated`) — no aplica
-  todavía la restricción por rol; queda como trabajo futuro.
-
----
-
-## 📝 Changelog
+### v1.1.0 (Julio 2026)
+- **Validación y Auto-Formateo de RUT Chileno (Módulo 11):**
+  - Implementación del algoritmo oficial Módulo 11 en cliente (`validators.js`) con auto-formateo en vivo (`XX.XXX.XXX-Y`) e indicadores visuales Bootstrap (`is-valid` / `is-invalid`).
+  - Validación backend estricta en `ClienteForm.clean_rut()` en Django y funciones reutilizables `validar_rut_chileno` y `formatear_rut_chileno` en `utils.py`.
+  - Nueva suite de pruebas unitarias `inventario/tests/test_validators.py` con 19 test cases.
+- **Modularización JavaScript Frontend (Zero-Build):**
+  - Descomposición del script monolítico `inventario.js` en 4 módulos independientes: `validators.js`, `table-sort.js`, `excel-import.js` y `guia-abastecimiento.js`.
+  - Inclusión limpia de scripts en `base.html` preservando compatibilidad completa sin herramientas de compilación.
+- **Firma de Autor e Identidad Visual:**
+  - Firma institucional "Desarrollado por Hans Schiess en Temuco, Chile | Versión 1.0" integrada en el menú lateral, pie de página principal y pantalla de inicio de sesión.
+  - Correcciones de contraste en logos e imágenes para el tema claro y oscuro.
+- **UX de Despacho:**
+  - Menú lateral fijado de forma permanente en la vista `/despacho/`.
 
 ### v1.0.1 (Julio 2026)
-- Sistema de roles centralizado en `inventario/roles.py`, desacoplado de `MODO_DEMO`
-  (antes la restricción de secciones sólo aplicaba en modo demo).
-- Corrección de vistas CRUD sin `@login_required` (acceso anónimo no intencionado).
-- Menú de navegación (`base.html`) ahora oculta secciones según `secciones_bloqueadas`
-  expuesto por `context_processors.py`, en vez de lógica hardcodeada por username.
-- Nueva suite `inventario/tests/test_roles.py` con tests de unidad e integración del
-  sistema de roles.
-- `staticfiles/` (salida de `collectstatic`) agregado a `.gitignore`.
+- Sistema de roles centralizado en `inventario/roles.py`, desacoplado de `MODO_DEMO`.
+- Corrección de vistas CRUD sin `@login_required`.
+- Menú de navegación (`base.html`) oculta secciones según `secciones_bloqueadas`.
+- Nueva suite `inventario/tests/test_roles.py` con tests de unidad e integración.
 
 ### v1.0.0 (Julio 2026) — Versión Inicial
 - Fork genérico del proyecto OpenDTE ERP.
@@ -610,8 +603,8 @@ independiente a `MODO_DEMO` (la restricción aplica siempre, tanto en demo como 
 
 ---
 
-## 📜 Licencia
+## Licencia
 
-Este proyecto está licenciado bajo la [Licencia MIT](LICENSE).
+Este proyecto está licenciado bajo la Licencia MIT.
 
-Basado en el trabajo original de [schiesscl/opendte](https://github.com/schiesscl/opendte).
+Desarrollado por Hans Schiess en Temuco, Chile. Basado en el proyecto original en [https://github.com/schiesscl/open-dte](https://github.com/schiesscl/open-dte).
