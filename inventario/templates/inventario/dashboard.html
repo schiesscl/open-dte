@@ -11,7 +11,7 @@
     </button>
 </div>
 <!-- Filtros por Período de Tiempo -->
-<div class="card shadow-sm border-0 mb-4 bg-light">
+<div class="card shadow-sm border-0 mb-4 bg-body-tertiary">
     <div class="card-body py-3">
         <form method="GET" action="{% url 'dashboard' %}" class="row align-items-end g-3" id="form-filtros-tiempo">
             <!-- Selector de Período -->
@@ -87,10 +87,10 @@
     </div>
     
     <!-- Banner de Rango Activo -->
-    <div class="card-footer bg-white border-top-0 py-2 d-flex justify-content-between align-items-center">
-        <span class="text-muted small">
+    <div class="card-footer bg-body-secondary border-top-0 py-2 d-flex justify-content-between align-items-center">
+        <span class="text-secondary small">
             <i class="bi bi-info-circle-fill text-primary"></i> 
-            Datos filtrados desde el <strong class="text-dark">{{ start_date|date:"d/m/Y" }}</strong> hasta el <strong class="text-dark">{{ end_date|date:"d/m/Y" }}</strong>.
+            Datos filtrados desde el <strong>{{ start_date|date:"d/m/Y" }}</strong> hasta el <strong>{{ end_date|date:"d/m/Y" }}</strong>.
         </span>
         <span class="badge bg-fs-black text-fs-yellow fs-7 px-3 py-2">
             Período: <strong>{{ periodo_label }}</strong>

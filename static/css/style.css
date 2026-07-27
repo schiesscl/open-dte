@@ -26,6 +26,7 @@
     --logo-bg: transparent;
     --logo-radius: 0;
     --logo-shadow: 0 0 0 0 transparent;
+    --logo-dte-color: #111215;
 
     /* Fluent UI Additions */
     --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -58,6 +59,7 @@
     --logo-bg: #ffffff;
     --logo-radius: 4px;
     --logo-shadow: 0 0 0 5px #ffffff;
+    --logo-dte-color: #ffffff;
 
     /* Fluent UI Additions */
     --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.2);
@@ -79,6 +81,7 @@ body {
 .bg-fs-black { background-color: var(--fs-black); }
 .text-fs-yellow { color: var(--fs-yellow); }
 .text-fs-grey { color: var(--fs-grey); }
+.logo-dte-text { color: var(--logo-dte-color); }
 
 /* Botones personalizados (Microsoft 365 Style) */
 .btn {
@@ -503,37 +506,6 @@ tbody tr.table-warning-fs td {
 tbody tr.table-warning-fs strong,
 tbody tr.table-warning-fs .fw-bold {
     color: #0a0a0a !important;
-}
-
-/* --- DISEÑO EXCLUSIVO PARA LA PÁGINA DE DESPACHO EN ESCRITORIO (SIDEBAR HOVER OVERLAY) --- */
-@media (min-width: 992px) {
-    .layout-despacho .sidebar {
-        transform: translateX(-280px);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
-        box-shadow: none;
-    }
-    
-    /* Trigger invisible para el hover del sidebar */
-    .layout-despacho .sidebar::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        right: -15px; /* ancho de zona sensible al hover */
-        width: 15px;
-        height: 100%;
-        background: transparent;
-        pointer-events: auto;
-        z-index: 1001;
-    }
-    
-    .layout-despacho .sidebar:hover {
-        transform: translateX(0);
-        box-shadow: 5px 0 25px rgba(0, 0, 0, 0.15);
-    }
-    
-    .layout-despacho .main-content {
-        margin-left: 0;
-    }
 }
 
 /* --- ESTILOS ADICIONALES PARA GUÍAS DE ABASTECIMIENTO --- */

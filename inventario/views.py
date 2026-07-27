@@ -53,7 +53,12 @@ def login_demo(request):
         else:
             messages.error(request, "Usuario o contraseña incorrectos de demostración.")
             
-    return render(request, 'inventario/login.html', {'next': next_url})
+    from django.contrib.auth.models import User
+    usuarios_disponibles = User.objects.filter(is_active=True).order_by('id')
+    return render(request, 'inventario/login.html', {
+        'next': next_url,
+        'usuarios_disponibles': usuarios_disponibles
+    })
 
 @login_required
 @bloquear_seccion('dashboard', "Acceso restringido: tu perfil no tiene acceso al Panel de Control.")

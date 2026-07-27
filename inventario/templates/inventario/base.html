@@ -51,9 +51,7 @@
       };
     </script>
   </head>
-  <body
-    class="{% if request.resolver_match.url_name == 'despacho' %}layout-despacho{% endif %}"
-  >
+  <body>
     <!-- Contenedor General de la Aplicación -->
     <div class="app-container">
       <!-- Header Móvil (Solo visible en pantallas < 992px) -->
@@ -65,7 +63,7 @@
           class="mobile-logo text-decoration-none d-flex align-items-center"
         >
           <span class="fs-4 fw-bold text-fs-yellow"
-            >Open<span class="text-white">DTE</span></span
+            >Open<span class="logo-dte-text">DTE</span></span
           >
         </a>
         <div class="d-flex align-items-center gap-2">
@@ -104,7 +102,7 @@
               class="text-decoration-none d-inline-block"
             >
               <span class="fs-3 fw-bold text-fs-yellow"
-                >Open<span class="text-white">DTE</span></span
+                >Open<span class="logo-dte-text">DTE</span></span
               >
             </a>
             {% if user.is_authenticated %}
@@ -168,7 +166,7 @@
                 class="nav-link {% if request.resolver_match.url_name == 'stock_vendedores' %}active{% endif %}"
                 href="{% url 'stock_vendedores' %}"
               >
-                <i class="bi bi-boxes"></i> Stock Bodega Temuco
+                <i class="bi bi-boxes"></i> Stock de Bodega
               </a>
             </li>
             {% endif %} {% if 'despacho' not in secciones_bloqueadas %}
@@ -251,6 +249,16 @@
           >
             <i class="bi bi-arrow-counterclockwise"></i> Restaurar Demo
           </button>
+
+          <!-- Firma Compacta Sidebar Desktop -->
+          <div class="sidebar-copyright text-center mt-3 pt-2 border-top border-secondary border-opacity-25 opacity-75">
+            <small class="d-block text-muted" style="font-size: 0.72rem;">
+              Desarrollado por <strong>Hans Schiess</strong>
+            </small>
+            <small class="text-muted" style="font-size: 0.68rem;">
+              Temuco, Chile &copy; 2006 | v1.0
+            </small>
+          </div>
         </div>
       </aside>
 
@@ -266,7 +274,7 @@
         >
           <h5 class="offcanvas-title fw-bold" id="offcanvasSidebarMenuLabel">
             <span class="text-fs-yellow"
-              >Open<span class="text-white">DTE</span></span
+              >Open<span class="logo-dte-text">DTE</span></span
             >
             <span class="text-muted fs-6 ms-2">Menú</span>
           </h5>
@@ -337,7 +345,7 @@
                   class="nav-link {% if request.resolver_match.url_name == 'stock_vendedores' %}active{% endif %}"
                   href="{% url 'stock_vendedores' %}"
                 >
-                  <i class="bi bi-boxes"></i> Stock Bodega Temuco
+                  <i class="bi bi-boxes"></i> Stock de Bodega
                 </a>
               </li>
               {% endif %} {% if 'despacho' not in secciones_bloqueadas %}
@@ -423,6 +431,16 @@
             >
               <i class="bi bi-arrow-counterclockwise"></i> Restaurar Demo
             </button>
+
+            <!-- Firma Compacta Sidebar Móvil -->
+            <div class="sidebar-copyright text-center mt-3 pt-2 border-top border-secondary border-opacity-25 opacity-75">
+              <small class="d-block text-muted" style="font-size: 0.72rem;">
+                Desarrollado por <strong>Hans Schiess</strong>
+              </small>
+              <small class="text-muted" style="font-size: 0.68rem;">
+                Temuco, Chile &copy; 2006 | v1.0
+              </small>
+            </div>
           </div>
         </div>
       </div>
@@ -436,8 +454,7 @@
           <!-- Footer en el flujo normal de navegación -->
           <footer class="text-center py-4 text-muted mt-5 border-top">
             <p class="mb-0 small">
-              &copy; {% now "Y" %} OpenDTE ERP - Desarrollado para Comercial
-              OpenDTE Ltda. | Versión 1.1.10
+              &copy; 2006 OpenDTE ERP - Desarrollado por Hans Schiess en Temuco, Chile | Versión 1.0
             </p>
           </footer>
         </div>

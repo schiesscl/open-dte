@@ -884,7 +884,7 @@ document.addEventListener('DOMContentLoaded', function() {
             selectMapCodigo.value = colCodigoDefault;
         }
 
-        const colActualDefault = columnas.find(c => ['temuco', 'stock temuco', 'cantidad', 'stock_actual', 'contabilizado', 'real', 'fisico', 'stock_real', 'stock real'].includes(c.toLowerCase().trim()));
+        const colActualDefault = columnas.find(c => ['principal', 'stock principal', 'temuco', 'stock temuco', 'cantidad', 'stock_actual', 'contabilizado', 'real', 'fisico', 'stock_real', 'stock real'].includes(c.toLowerCase().trim()));
         if (colActualDefault && selectMapActual) {
             selectMapActual.value = colActualDefault;
         }
@@ -939,7 +939,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const colSistema = selectMapSistema ? selectMapSistema.value : '';
             
             if (!colActual && !colReal && !colMinimo && !colSistema) {
-                showAlertExcel('Debes seleccionar al menos una columna de stock para importar (Stock Temuco, Mínimo o Sistema Fullsello).', 'warning');
+                showAlertExcel('Debes seleccionar al menos una columna de stock para importar (Stock Principal, Mínimo o Sistema ERP).', 'warning');
                 return;
             }
 
