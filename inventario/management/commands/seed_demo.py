@@ -1,4 +1,4 @@
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.core.management import call_command
 from django.db import transaction
 from inventario.models import (
@@ -24,9 +24,8 @@ class Command(BaseCommand):
                 Cliente.objects.all().delete()
                 Bodega.objects.all().delete()
                 Sucursal.objects.all().delete()
-            
-            self.stdout.write("Loading demo seed data...")
-            call_command('loaddata', 'demo_seed.json')
+                self.stdout.write("Loading demo seed data...")
+                call_command('loaddata', 'demo_seed.json')
             self.stdout.write(self.style.SUCCESS("Demo seed data loaded successfully!"))
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f"Error seeding database: {e}"))
+            raise CommandError(f"Error seeding database: {e}") from e
