@@ -14,6 +14,7 @@
 <div class="card shadow-sm border-0 mb-4 bg-body-tertiary">
     <div class="card-body py-3">
         <form method="GET" action="{% url 'dashboard' %}" class="row align-items-end g-3" id="form-filtros-tiempo">
+            <input type="hidden" name="per_page" value="{{ per_page }}">
             <!-- Selector de Período -->
             <div class="col-md-3">
                 <label for="periodo" class="form-label fw-bold text-fs-grey mb-1"><i class="bi bi-calendar3 text-fs-yellow"></i> Período de Visualización</label>
@@ -201,12 +202,12 @@ document.addEventListener('DOMContentLoaded', toggleFilterInputs);
             <table class="table table-hover align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th>Tipo</th>
-                        <th>Nº Documento</th>
-                        <th>Cliente</th>
-                        <th>Total</th>
-                        <th>Fecha</th>
-                        <th>Acción</th>
+                        <th scope="col">Tipo</th>
+                        <th scope="col">Nº Documento</th>
+                        <th scope="col">Cliente</th>
+                        <th scope="col">Total</th>
+                        <th scope="col">Fecha</th>
+                        <th scope="col">Acción</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -295,11 +296,11 @@ document.addEventListener('DOMContentLoaded', toggleFilterInputs);
                             <table class="table table-sm">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>Código</th>
-                                        <th>Producto</th>
-                                        <th class="text-end">Cantidad</th>
-                                        <th class="text-end">P. Unit.</th>
-                                        <th class="text-end">Total</th>
+                                        <th scope="col">Código</th>
+                                        <th scope="col">Producto</th>
+                                        <th scope="col" class="text-end">Cantidad</th>
+                                        <th scope="col" class="text-end">P. Unit.</th>
+                                        <th scope="col" class="text-end">Total</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -350,19 +351,36 @@ document.addEventListener('DOMContentLoaded', toggleFilterInputs);
 <!-- Tabla de Documentos del Período Seleccionado -->
 <div class="card shadow-sm border-0 mt-4 mb-4">
     <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
-        <h5 class="text-fs-grey fw-bold"><i class="bi bi-calendar-event text-fs-yellow"></i> Documentos del Período Seleccionado (Máx 50)</h5>
+        <h5 class="text-fs-grey fw-bold"><i class="bi bi-calendar-event text-fs-yellow" aria-hidden="true"></i> Documentos del Período Seleccionado</h5>
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pb-2">
+            <small class="text-muted">
+                {% if not total_documentos_periodo %}Sin documentos en este período
+                {% elif per_page == 'todos' %}Mostrando todos los <strong>{{ total_documentos_periodo }}</strong> documentos
+                {% else %}Mostrando <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong> de <strong>{{ total_documentos_periodo }}</strong> documentos{% endif %}
+            </small>
+            <form method="GET" class="d-flex align-items-center gap-2">
+                {% for nombre, valor in filtros_paginacion %}<input type="hidden" name="{{ nombre }}" value="{{ valor }}">{% endfor %}
+                <label for="per_page_select" class="text-muted small">Mostrar:</label>
+                <select id="per_page_select" name="per_page" class="form-select form-select-sm" onchange="this.form.submit()">
+                    {% for opcion in opciones_per_page %}
+                    <option value="{{ opcion }}" {% if per_page == opcion %}selected{% endif %}>{% if opcion == 'todos' %}Todos ({{ total_documentos_periodo }}){% else %}{{ opcion }} por pág.{% endif %}</option>
+                    {% endfor %}
+                </select>
+                <noscript><button type="submit" class="btn btn-sm btn-primary">Aplicar</button></noscript>
+            </form>
+        </div>
     </div>
     <div class="card-body">
-        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+        <div class="table-responsive" {% if per_page != 'todos' %}style="max-height: 520px; overflow-y: auto;"{% endif %}>
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light sticky-top" style="z-index: 1;">
                     <tr>
-                        <th>Tipo</th>
-                        <th>Nº Documento</th>
-                        <th>Cliente</th>
-                        <th>Total</th>
-                        <th>Fecha Emisión</th>
-                        <th>Acción</th>
+                        <th scope="col">Tipo</th>
+                        <th scope="col">Nº Documento</th>
+                        <th scope="col">Cliente</th>
+                        <th scope="col">Total</th>
+                        <th scope="col">Fecha Emisión</th>
+                        <th scope="col">Acción</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -399,6 +417,23 @@ document.addEventListener('DOMContentLoaded', toggleFilterInputs);
                 </tbody>
             </table>
         </div>
+
+        {% if page_obj.has_other_pages and per_page != 'todos' %}
+        <nav aria-label="Páginas de documentos del período" class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+            <span class="text-muted small">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?{{ querystring_filtros }}&amp;page=1">Primera</a></li>
+                <li class="page-item"><a class="page-link" href="?{{ querystring_filtros }}&amp;page={{ page_obj.previous_page_number }}">Anterior</a></li>
+                {% endif %}
+                <li class="page-item active"><span class="page-link" aria-current="page">{{ page_obj.number }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?{{ querystring_filtros }}&amp;page={{ page_obj.next_page_number }}">Siguiente</a></li>
+                <li class="page-item"><a class="page-link" href="?{{ querystring_filtros }}&amp;page={{ page_obj.paginator.num_pages }}">Última</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
 
         {% if documentos_periodo %}
         {% for p in documentos_periodo %}
@@ -451,11 +486,11 @@ document.addEventListener('DOMContentLoaded', toggleFilterInputs);
                             <table class="table table-sm">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>Código</th>
-                                        <th>Producto</th>
-                                        <th class="text-end">Cantidad</th>
-                                        <th class="text-end">P. Unit.</th>
-                                        <th class="text-end">Total</th>
+                                        <th scope="col">Código</th>
+                                        <th scope="col">Producto</th>
+                                        <th scope="col" class="text-end">Cantidad</th>
+                                        <th scope="col" class="text-end">P. Unit.</th>
+                                        <th scope="col" class="text-end">Total</th>
                                     </tr>
                                 </thead>
                                 <tbody>

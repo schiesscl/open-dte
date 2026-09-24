@@ -138,12 +138,12 @@ window.OpenDTEExcelImport = (function() {
 
                 let data = null;
                 const contentType = response.headers.get("content-type");
-                if (contentType && contentType.indexOf("application/json") !== -1) {
+                if (contentType?.includes("application/json")) {
                     data = await response.json();
                 }
 
-                if (!response.ok || !data || !data.exito) {
-                    showAlert((data && data.mensaje) || `Error al analizar el archivo de Excel (${response.status})`);
+                if (!response.ok || !data?.exito) {
+                    showAlert(data?.mensaje || `Error al analizar el archivo de Excel (${response.status})`);
                     return;
                 }
 
@@ -211,6 +211,7 @@ window.OpenDTEExcelImport = (function() {
             previewHead.innerHTML = '';
             columnas.forEach(col => {
                 const th = document.createElement('th');
+                th.scope = 'col';
                 th.textContent = col;
                 previewHead.appendChild(th);
             });
@@ -228,74 +229,76 @@ window.OpenDTEExcelImport = (function() {
             });
         }
 
+        function obtenerColumnasExcel() {
+            return {
+                columna_codigo: selectMapCodigo?.value || '',
+                columna_stock_actual: selectMapActual?.value || '',
+                columna_stock_real: selectMapReal?.value || '',
+                columna_stock_minimo: selectMapMinimo?.value || '',
+                columna_stock_sistema: selectMapSistema?.value || '',
+            };
+        }
+
+        function validarColumnasExcel(columnas) {
+            if (!columnas.columna_codigo) {
+                showAlert('Debes seleccionar la columna del código de producto.', 'warning');
+                return false;
+            }
+            if (!Object.entries(columnas).some(([key, value]) => key !== 'columna_codigo' && value)) {
+                showAlert('Debes seleccionar al menos una columna de stock para importar.', 'warning');
+                return false;
+            }
+            const asignadas = Object.values(columnas).filter(Boolean);
+            if (new Set(asignadas).size !== asignadas.length) {
+                showAlert('No puedes asignar la misma columna de Excel a más de un campo del sistema.', 'warning');
+                return false;
+            }
+            return true;
+        }
+
+        function crearFormDataImportacion(columnas) {
+            const formData = new FormData();
+            formData.append('archivo', excelFileObject);
+            Object.entries(columnas).forEach(([key, value]) => formData.append(key, value));
+            formData.append('opcion_no_numericos', document.querySelector('input[name="excel-no-numericos"]:checked')?.value || 'mantener');
+            formData.append('csrfmiddlewaretoken', config.csrfToken);
+            return formData;
+        }
+
+        function mostrarProcesamientoExcel(procesando) {
+            document.getElementById('excel-paso-procesando')?.classList.toggle('d-none', !procesando);
+            [paso2Excel, btnConfirmarExcel, btnAtrasExcel].forEach(el => el?.classList.toggle('d-none', procesando));
+        }
+
+        function simularProgresoImportacion(progressBar, progressDetail) {
+            const totalFilas = excelTotalFilas || 100;
+            let progress = 0;
+            const timer = setInterval(() => {
+                progress = Math.min(95, progress + 95 / 30);
+                if (progressBar) progressBar.style.width = `${Math.round(progress)}%`;
+                if (progressDetail) progressDetail.textContent = `Procesando filas: ${Math.floor(totalFilas * progress / 100)} de ${totalFilas} (${Math.round(progress)}%)`;
+                if (progress >= 95) clearInterval(timer);
+            }, 40);
+            return timer;
+        }
+
         if (btnConfirmarExcel) {
             btnConfirmarExcel.addEventListener('click', async () => {
                 if (alertContainerExcel) alertContainerExcel.innerHTML = '';
+                const columnas = obtenerColumnasExcel();
+                if (!validarColumnasExcel(columnas)) return;
+                const formData = crearFormDataImportacion(columnas);
 
-                const colCodigo = selectMapCodigo ? selectMapCodigo.value : '';
-                const colActual = selectMapActual ? selectMapActual.value : '';
-                const colReal = selectMapReal ? selectMapReal.value : '';
-                const colMinimo = selectMapMinimo ? selectMapMinimo.value : '';
-                const colSistema = selectMapSistema ? selectMapSistema.value : '';
-
-                if (!colActual && !colReal && !colMinimo && !colSistema) {
-                    showAlert('Debes seleccionar al menos una columna de stock para importar (Stock Principal, Mínimo o Sistema ERP).', 'warning');
-                    return;
-                }
-
-                const mappedCols = [colCodigo, colActual, colReal, colMinimo, colSistema].filter(c => c !== '');
-                const colSet = new Set(mappedCols);
-                if (colSet.size !== mappedCols.length) {
-                    showAlert('No puedes asignar la misma columna de Excel a más de un campo del sistema.', 'warning');
-                    return;
-                }
-
-                const radioNonNumeric = document.querySelector('input[name="excel-no-numericos"]:checked');
-                const nonNumericOption = radioNonNumeric ? radioNonNumeric.value : 'mantener';
-
-                const formData = new FormData();
-                formData.append('archivo', excelFileObject);
-                formData.append('columna_codigo', colCodigo);
-                formData.append('columna_stock_actual', colActual);
-                formData.append('columna_stock_real', colReal);
-                formData.append('columna_stock_minimo', colMinimo);
-                formData.append('columna_stock_sistema', colSistema);
-                formData.append('opcion_no_numericos', nonNumericOption);
-                formData.append('csrfmiddlewaretoken', config.csrfToken);
-
-                const pasoProcesando = document.getElementById('excel-paso-procesando');
                 const progressBar = document.getElementById('excel-progress-bar');
                 const progressTitle = document.getElementById('excel-progress-title');
                 const progressDetail = document.getElementById('excel-progress-detail');
 
-                if (paso2Excel) paso2Excel.classList.add('d-none');
-                if (pasoProcesando) pasoProcesando.classList.remove('d-none');
-
-                if (btnConfirmarExcel) btnConfirmarExcel.classList.add('d-none');
-                if (btnAtrasExcel) btnAtrasExcel.classList.add('d-none');
+                mostrarProcesamientoExcel(true);
 
                 if (progressBar) progressBar.style.width = '0%';
                 if (progressTitle) progressTitle.textContent = 'Procesando importación...';
 
-                const totalFilas = excelTotalFilas || 100;
-                const duration = 1200;
-                const intervalTime = 40;
-                const steps = duration / intervalTime;
-                const rowsPerStep = Math.ceil(totalFilas / steps);
-
-                let currentFilas = 0;
-                let progress = 0;
-
-                const timer = setInterval(() => {
-                    progress += (95 / steps);
-                    currentFilas += rowsPerStep;
-                    if (currentFilas > totalFilas * 0.95) currentFilas = Math.floor(totalFilas * 0.95);
-
-                    if (progressBar) progressBar.style.width = `${Math.min(95, Math.round(progress))}%`;
-                    if (progressDetail) progressDetail.textContent = `Procesando filas: ${currentFilas} de ${totalFilas} (${Math.min(95, Math.round(progress))}%)`;
-
-                    if (progress >= 95) clearInterval(timer);
-                }, intervalTime);
+                const timer = simularProgresoImportacion(progressBar, progressDetail);
 
                 try {
                     const response = await fetch(config.urls.procesarExcel, {
@@ -305,18 +308,15 @@ window.OpenDTEExcelImport = (function() {
 
                     let data = null;
                     const contentType = response.headers.get("content-type");
-                    if (contentType && contentType.indexOf("application/json") !== -1) {
+                    if (contentType?.includes("application/json")) {
                         data = await response.json();
                     }
 
                     clearInterval(timer);
 
-                    if (!response.ok || !data || !data.exito) {
-                        showAlert((data && data.mensaje) || 'Ocurrió un error al procesar el archivo Excel.');
-                        if (pasoProcesando) pasoProcesando.classList.add('d-none');
-                        if (paso2Excel) paso2Excel.classList.remove('d-none');
-                        if (btnConfirmarExcel) btnConfirmarExcel.classList.remove('d-none');
-                        if (btnAtrasExcel) btnAtrasExcel.classList.remove('d-none');
+                    if (!response.ok || !data?.exito) {
+                        showAlert(data?.mensaje || 'Ocurrió un error al procesar el archivo Excel.');
+                        mostrarProcesamientoExcel(false);
                         return;
                     }
 
@@ -332,10 +332,7 @@ window.OpenDTEExcelImport = (function() {
                     clearInterval(timer);
                     console.error(error);
                     showAlert(`Error de red al procesar el Excel: ${error.message || error}`);
-                    if (pasoProcesando) pasoProcesando.classList.add('d-none');
-                    if (paso2Excel) paso2Excel.classList.remove('d-none');
-                    if (btnConfirmarExcel) btnConfirmarExcel.classList.remove('d-none');
-                    if (btnAtrasExcel) btnAtrasExcel.classList.remove('d-none');
+                    mostrarProcesamientoExcel(false);
                 }
             });
         }

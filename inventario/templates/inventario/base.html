@@ -652,6 +652,7 @@
 
     <!-- Módulos JavaScript de OpenDTE -->
     <script src="{% static 'js/validators.js' %}"></script>
+    <script src="{% static 'js/sync-policy.js' %}"></script>
     <script src="{% static 'js/table-sort.js' %}"></script>
     <script src="{% static 'js/excel-import.js' %}"></script>
     <script src="{% static 'js/guia-abastecimiento.js' %}"></script>
@@ -724,7 +725,7 @@
         isScanning: false,
         scanIntervalId: null,
         status: "disconnected", // 'disconnected', 'needs_permission', 'syncing', 'active', 'error'
-        processedCount: parseInt(
+        processedCount: Number.parseInt(
           localStorage.getItem("sync_processed_count") || "0",
         ),
 
@@ -817,13 +818,14 @@
                   const key = `synced_${file.name}_${file.size}_${file.lastModified}`;
                   currentScanKeys.add(key);
 
-                  if (!localStorage.getItem(key)) {
+                  if (window.syncPolicy.shouldUpload(localStorage, key, file.name)) {
                     this.logToPage(
                       `Detectado nuevo archivo local: <strong>${file.name}</strong>. Subiendo...`,
                       "info",
                     );
 
                     const res = await this.uploadFile(file);
+                    window.syncPolicy.recordResult(localStorage, key, res);
                     if (res.exito) {
                       localStorage.setItem(key, "true");
                       filesUploaded++;
@@ -911,6 +913,7 @@
         },
 
         async uploadFile(file) {
+          console.debug('[Buzón Sync] Enviando:', file.name, file.size);
           const formData = new FormData();
           formData.append("archivo", file);
           formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
@@ -923,11 +926,13 @@
                 "X-Requested-With": "XMLHttpRequest",
               },
             });
-            if (!response.ok)
-              return { exito: false, mensaje: `Error HTTP ${response.status}` };
-            return await response.json();
+            if (!response.ok || response.redirected)
+              return { exito: false, retryable: true, mensaje: `Error HTTP ${response.status}` };
+            const result = await response.json();
+            console.debug('[Buzón Sync] Resultado:', file.name, result.exito, result.mensaje);
+            return result;
           } catch (error) {
-            return { exito: false, mensaje: error.message };
+            return { exito: false, retryable: true, mensaje: error.message };
           }
         },
 
@@ -1012,7 +1017,13 @@
 
         // Función Global Externa para disparar notificaciones desde Javascript (Offline)
         window.mostrarNotificacion = function (mensaje, tipo = "success") {
+          if (!window.syncPolicy.allowNotification(mensaje, tipo)) return;
           const container = document.querySelector(".toast-container");
+          const activeToasts = container.querySelectorAll('.toast:not(#js-toast-template)');
+          if (activeToasts.length >= 5) {
+            bootstrap.Toast.getInstance(activeToasts[0])?.dispose();
+            activeToasts[0].remove();
+          }
           const template = document
             .getElementById("js-toast-template")
             .cloneNode(true);
@@ -1036,8 +1047,11 @@
             template.classList.add("bg-success");
           }
 
-          template.querySelector("#js-toast-body").innerHTML =
-            `<i class="bi ${iconCode} me-2 fs-5"></i> ${mensaje}`;
+          const body = template.querySelector("#js-toast-body");
+          const icon = document.createElement('i');
+          icon.className = `bi ${iconCode} me-2 fs-5`;
+          icon.setAttribute('aria-hidden', 'true');
+          body.replaceChildren(icon, document.createTextNode(` ${mensaje}`));
 
           container.appendChild(template);
           const ts = new bootstrap.Toast(template);
@@ -1319,6 +1333,7 @@
 
             // Mostrar notificaciones de los resultados automáticos locales (solo si la pestaña está visible)
             if (resultados.length > 0) {
+              console.debug('[Buzón Polling] Resultados:', resultados);
               let huboExito = false;
               resultados.forEach((item) => {
                 if (document.visibilityState === "visible") {
@@ -1349,6 +1364,7 @@
 
             // Mostrar notificaciones en tiempo real globales de otros procesos (solo si la pestaña está visible)
             if (notificaciones_tiempo_real.length > 0) {
+              console.debug('[Buzón Polling] Novedades:', notificaciones_tiempo_real);
               let huboExito = false;
               notificaciones_tiempo_real.forEach((item) => {
                 if (document.visibilityState === "visible") {

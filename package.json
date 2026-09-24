@@ -4,11 +4,11 @@
   "description": "Sistema genérico de DTE y gestión de inventario",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test tests/js/*.test.cjs"
   },
   "dependencies": {
     "localforage": "^1.10.0"
   },
-  "author": "",
+  "author": "Hans Schiess",
   "license": "MIT"
 }

@@ -1,0 +1,58 @@
+# =======================================================
+# 1. LOCKFILES DE DEPENDENCIAS (Archivos de miles de líneas)
+# =======================================================
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+composer.lock
+Gemfile.lock
+Cargo.lock
+poetry.lock
+
+# =======================================================
+# 2. CARPETAS DE DEPENDENCIAS, COMPILACIÓN Y CACHÉ
+# =======================================================
+node_modules/
+vendor/
+dist/
+build/
+out/
+.next/
+.nuxt/
+.cache/
+coverage/
+.turbo/
+
+# =======================================================
+# 3. BASES DE DATOS, ARCHIVOS GRANDES Y FIXTURES DE PRUEBAS
+# =======================================================
+*.sql
+*.sqlite
+*.csv
+*.tsv
+*.parquet
+*.dump
+tests/fixtures/**
+**/mocks/**/*.json
+
+# =======================================================
+# 4. ARCHIVOS MULTIMEDIA, FUENTES Y LOGS
+# =======================================================
+*.svg
+*.png
+*.jpg
+*.jpeg
+*.ico
+*.pdf
+*.woff
+*.woff2
+*.log
+*.tmp
+
+# =======================================================
+# 5. SECRETOS Y VARIABLES DE ENTORNO
+# =======================================================
+.env*
+*.pem
+*.key
+*.cert

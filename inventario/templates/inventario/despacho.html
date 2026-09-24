@@ -26,19 +26,21 @@
             <table class="table table-hover align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th>Tipo de Documento</th>
-                        <th>Nº Folio</th>
-                        <th>Cliente</th>
-                        <th>Fecha Emisión</th>
-                        <th class="text-end">Total</th>
-                        <th class="text-center">Acción</th>
+                        <th scope="col">Tipo de Documento</th>
+                        <th scope="col">Nº Folio</th>
+                        <th scope="col">Cliente</th>
+                        <th scope="col">Fecha Emisión</th>
+                        <th scope="col" class="text-end">Total</th>
+                        <th scope="col" class="text-center">Acción</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for m in matches %}
                     <tr>
                         <td>
-                            {% if m.tipo_documento == 'NOTA DE CREDITO' %}
+                            {% if m.tipo_documento == 'GUIA DE DESPACHO' %}
+                                <span class="badge bg-success">Guía de Despacho</span>
+                            {% elif m.tipo_documento == 'NOTA DE CREDITO' %}
                                 <span class="badge bg-danger"><i class="bi bi-file-earmark-minus"></i> Nota de Crédito</span>
                             {% else %}
                                 <span class="badge bg-primary"><i class="bi bi-receipt"></i> Factura</span>
@@ -71,6 +73,9 @@
 <div class="card mb-3">
     <div class="card-header">
         <h5 class="mb-0 fw-bold"><i class="bi bi-file-earmark-check text-fs-yellow"></i> Datos del Documento</h5>
+        {% if factura %}
+        <span class="badge {% if factura.tipo_documento == 'GUIA DE DESPACHO' %}bg-success{% else %}bg-primary{% endif %}">{{ factura.tipo_documento }}</span>
+        {% endif %}
     </div>
     <div class="card-body">
         <!-- PRIMERA FILA: DATOS LECTURA / BÚSQUEDA -->
@@ -78,30 +83,30 @@
             <!-- RAZÓN SOCIAL -->
             <div class="col-md-5 mb-2 mb-md-0">
                 <label class="form-label fw-bold text-muted small mb-0">RAZON SOCIAL</label>
-                <input type="text" class="form-control form-control-lg fs-4 fw-bold" value="{% if factura %}{{ factura.cliente.razon_social }}{% endif %}" disabled>
+                <input type="text" aria-label="Razón social" class="form-control form-control-lg fs-4 fw-bold" value="{% if factura %}{{ factura.cliente.razon_social }}{% endif %}" disabled>
             </div>
             
             <!-- RUT -->
             <div class="col-md-2 mb-2 mb-md-0">
                 <label class="form-label fw-bold text-muted small mb-0">RUT</label>
-                <input type="text" class="form-control form-control-lg fs-4" value="{% if factura %}{{ factura.cliente.rut }}{% endif %}" disabled>
+                <input type="text" aria-label="RUT" class="form-control form-control-lg fs-4" value="{% if factura %}{{ factura.cliente.rut }}{% endif %}" disabled>
             </div>
 
             <!-- FECHA EMISIÓN -->
             <div class="col-md-2 mb-2 mb-md-0">
                 <label class="form-label fw-bold text-muted small mb-0">FECHA EMISIÓN</label>
-                <input type="text" class="form-control form-control-lg fs-4" value="{% if factura %}{{ factura.fecha_emision|date:'d/m/Y' }}{% endif %}" disabled>
+                <input type="text" aria-label="Fecha de emisión" class="form-control form-control-lg fs-4" value="{% if factura %}{{ factura.fecha_emision|date:'d/m/Y' }}{% endif %}" disabled>
             </div>
             
             <!-- Nº FACTURA (BUSCADOR INTEGRADO) -->
             <div class="col-md-3 mb-2 mb-md-0">
                 <form method="GET" action="{% url 'despacho' %}" id="form-buscar-factura">
-                    <label for="buscar" class="form-label fw-bold text-muted small mb-0">Nº FACTURA</label>
+                    <label for="buscar" class="form-label fw-bold text-muted small mb-0">Nº FACTURA O GUÍA</label>
                     <div class="input-group">
                         <span class="input-group-text fs-4 fw-bold text-primary">#</span>
                         <input type="text" class="form-control form-control-lg fs-4 fw-bold text-primary" id="buscar" name="buscar" 
                                value="{% if factura %}{{ factura.numero }}{% else %}{{ buscar }}{% endif %}" placeholder="Ej: 12345" autofocus>
-                        <button class="btn btn-fs-yellow" type="submit">
+                        <button class="btn btn-fs-yellow" type="submit" aria-label="Buscar factura o guía">
                             <i class="bi bi-search fs-4"></i>
                         </button>
                     </div>
@@ -118,7 +123,7 @@
                         <span class="input-group-text fs-4 fw-bold text-primary">#</span>
                         <input type="text" id="input-escaner" class="form-control form-control-lg fs-4 fw-bold text-primary" 
                                placeholder="" autocomplete="off" {% if not factura %}disabled{% endif %}>
-                        <button class="btn btn-fs-yellow" type="button" id="btn-buscar-producto" {% if not factura %}disabled{% endif %}>
+                        <button class="btn btn-fs-yellow" type="button" id="btn-buscar-producto" aria-label="Buscar producto" {% if not factura %}disabled{% endif %}>
                             <i class="bi bi-search fs-4"></i>
                         </button>
                     </div>
@@ -126,7 +131,7 @@
 
                 <!-- DESCRIPCIÓN PRODUCTO -->
                 <div class="col-md-5 mb-2 mb-md-0">
-                    <label class="form-label fw-bold text-muted small mb-0">DESCRIPCION PRODUCTO</label>
+                    <label for="producto-descripcion" class="form-label fw-bold text-muted small mb-0">DESCRIPCION PRODUCTO</label>
                     <input type="text" id="producto-descripcion" class="form-control form-control-lg fs-4" value="" disabled>
                 </div>
 
@@ -144,7 +149,7 @@
 
                 <!-- UNIDAD -->
                 <div class="col-md-1 mb-2 mb-md-0">
-                    <label class="form-label fw-bold text-muted small mb-0">UNIDAD</label>
+                    <label for="scan-unidad" class="form-label fw-bold text-muted small mb-0">UNIDAD</label>
                     <input type="text" id="scan-unidad" class="form-control form-control-lg fs-4 text-center" value="" disabled>
                 </div>
             </div>
@@ -161,11 +166,11 @@
             <table class="table table-hover align-middle mb-0" id="tabla-despacho">
                 <thead>
                     <tr>
-                        <th class="ps-4">Código (Barra/SKU)</th>
-                        <th>Producto</th>
-                        <th class="text-center">Cant. Req.</th>
-                        <th class="text-center">Cant. Escaneada</th>
-                        <th class="text-center pe-4">Estado</th>
+                        <th scope="col" class="ps-4">Código (Barra/SKU)</th>
+                        <th scope="col">Producto</th>
+                        <th scope="col" class="text-center">Cant. Req.</th>
+                        <th scope="col" class="text-center">Cant. Escaneada</th>
+                        <th scope="col" class="text-center pe-4">Estado</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -207,6 +212,9 @@
 <!-- Lógica de Escaneo JS -->
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        {% if factura %}
+        console.debug('[Preparar Despacho] Documento:', '{{ factura.tipo_documento|escapejs }}', '{{ factura.numero|escapejs }}', '{{ factura.estado_despacho|escapejs }}');
+        {% endif %}
         const inputEscaner = document.getElementById('input-escaner');
         const btnAgregarManual = document.getElementById('btn-agregar-manual');
         const btnGenerarDespacho = document.getElementById('btn-generar-despacho');
@@ -218,6 +226,7 @@
         // Cambiar estado visual al enviar el formulario
         if (formDespacho) {
             formDespacho.addEventListener('submit', () => {
+                console.debug('[Preparar Despacho] Confirmando despacho');
                 btnGenerarDespacho.disabled = true;
                 btnGenerarDespacho.innerHTML = '<i class="bi bi-clock-history"></i> GUARDANDO...';
             });
@@ -240,8 +249,8 @@
             const filas = document.querySelectorAll('#tabla-despacho tbody tr');
             
             filas.forEach(fila => {
-                const req = parseInt(fila.getAttribute('data-requerida') || '0', 10);
-                const esc = parseInt(fila.querySelector('.escaneada').innerText, 10);
+                const req = Number.parseInt(fila.dataset.requerida || '0', 10);
+                const esc = Number.parseInt(fila.querySelector('.escaneada').innerText, 10);
                 if (req !== esc) {
                     todasCompletas = false;
                 }
@@ -258,6 +267,7 @@
         }
         
         function procesarCodigo(codigoIngresado) {
+            console.debug('[Preparar Despacho] Escaneo:', codigoIngresado);
             codigoIngresado = codigoIngresado.trim().toLowerCase();
             if(!codigoIngresado) return;
             
@@ -270,8 +280,8 @@
             // Analizar formato de multiplicador ingresado (ej: 5*codigo)
             let scanCantidad = 1;
             if (cantInput) {
-                const parsedVal = parseInt(cantInput.value.trim(), 10);
-                if (!isNaN(parsedVal) && parsedVal > 0) {
+                const parsedVal = Number.parseInt(cantInput.value.trim(), 10);
+                if (!Number.isNaN(parsedVal) && parsedVal > 0) {
                     scanCantidad = parsedVal;
                 }
             }
@@ -282,8 +292,8 @@
             if (asteriscoIndex > 0 && asteriscoIndex < codigoIngresado.length - 1) {
                 const parteCantidad = codigoIngresado.substring(0, asteriscoIndex).trim();
                 const parteCodigo = codigoIngresado.substring(asteriscoIndex + 1).trim();
-                const cantParsed = parseInt(parteCantidad, 10);
-                if (/^\d+$/.test(parteCantidad) && !isNaN(cantParsed) && cantParsed > 0 && parteCodigo.length > 0) {
+                const cantParsed = Number.parseInt(parteCantidad, 10);
+                if (/^\d+$/.test(parteCantidad) && !Number.isNaN(cantParsed) && cantParsed > 0 && parteCodigo.length > 0) {
                     scanCantidad = cantParsed;
                     codigoLimpio = parteCodigo;
                     if (cantInput) {
@@ -299,10 +309,10 @@
             
             const filas = document.querySelectorAll('#tabla-despacho tbody tr');
             for (const f of filas) {
-                const cod = (f.getAttribute('data-codigo') || '').toLowerCase();
-                const alt1 = (f.getAttribute('data-alt1') || '').toLowerCase();
-                const alt2 = (f.getAttribute('data-alt2') || '').toLowerCase();
-                const alt3 = (f.getAttribute('data-alt3') || '').toLowerCase();
+                const cod = (f.dataset.codigo || '').toLowerCase();
+                const alt1 = (f.dataset.alt1 || '').toLowerCase();
+                const alt2 = (f.dataset.alt2 || '').toLowerCase();
+                const alt3 = (f.dataset.alt3 || '').toLowerCase();
                 
                 if (codigoLimpio === cod) {
                     fila = f;
@@ -310,26 +320,26 @@
                     break;
                 } else if (codigoLimpio === alt1) {
                     fila = f;
-                    const mult1 = parseInt(f.getAttribute('data-mult1'), 10);
-                    multiplicador = isNaN(mult1) ? 1 : mult1;
+                    const mult1 = Number.parseInt(f.dataset.mult1, 10);
+                    multiplicador = Number.isNaN(mult1) ? 1 : mult1;
                     break;
                 } else if (codigoLimpio === alt2) {
                     fila = f;
-                    const mult2 = parseInt(f.getAttribute('data-mult2'), 10);
-                    multiplicador = isNaN(mult2) ? 12 : mult2;
+                    const mult2 = Number.parseInt(f.dataset.mult2, 10);
+                    multiplicador = Number.isNaN(mult2) ? 12 : mult2;
                     break;
                 } else if (codigoLimpio === alt3) {
                     fila = f;
-                    const mult3 = parseInt(f.getAttribute('data-mult3'), 10);
-                    multiplicador = isNaN(mult3) ? 24 : mult3;
+                    const mult3 = Number.parseInt(f.dataset.mult3, 10);
+                    multiplicador = Number.isNaN(mult3) ? 24 : mult3;
                     break;
                 }
             }
             
             if (fila) {
-                const required = parseInt(fila.getAttribute('data-requerida'), 10);
+                const required = Number.parseInt(fila.dataset.requerida, 10);
                 const escaneadaEl = fila.querySelector('.escaneada');
-                let escaneada = parseInt(escaneadaEl.innerText, 10);
+                let escaneada = Number.parseInt(escaneadaEl.innerText, 10);
                 
                 // Actualizar la descripción del producto en la interfaz
                 const descripcionEl = fila.querySelector('td:nth-child(2)');
@@ -340,10 +350,10 @@
                 
                 if (escaneada >= required) {
                     let tipoCodigoMsg = 'código';
-                    const cod = fila.getAttribute('data-codigo');
-                    const alt1 = fila.getAttribute('data-alt1');
-                    const alt2 = fila.getAttribute('data-alt2');
-                    const alt3 = fila.getAttribute('data-alt3');
+                    const cod = fila.dataset.codigo;
+                    const alt1 = fila.dataset.alt1;
+                    const alt2 = fila.dataset.alt2;
+                    const alt3 = fila.dataset.alt3;
                     
                     if (codigoLimpio === alt2) tipoCodigoMsg = `código caja (pack de ${multiplicador})`;
                     else if (codigoLimpio === alt3) tipoCodigoMsg = `código alternativo 3 (pack de ${multiplicador})`;
@@ -367,9 +377,9 @@
 
                 if (nuevoTotal > required) {
                     let tipoCodigoMsg = 'código';
-                    const alt1 = fila.getAttribute('data-alt1');
-                    const alt2 = fila.getAttribute('data-alt2');
-                    const alt3 = fila.getAttribute('data-alt3');
+                    const alt1 = fila.dataset.alt1;
+                    const alt2 = fila.dataset.alt2;
+                    const alt3 = fila.dataset.alt3;
                     
                     if (codigoLimpio === alt2) tipoCodigoMsg = `código caja (pack de ${multiplicador})`;
                     else if (codigoLimpio === alt3) tipoCodigoMsg = `código alternativo 3 (pack de ${multiplicador})`;

@@ -66,7 +66,7 @@ class Command(BaseCommand):
                         # [2]=COD.PRODUCTO, [3]=COD.ALTERNATIVO, [4]=DESCRIPCION,
                         # [5]=CANTIDAD, [6]=REAL, [7]=DIFERENCIA, [8]=MINIMO REPOSICION
                         codigo = row[2]
-                        codigo_alt = row[3] or None
+                        codigo_alt = row[3] or ''
                         descripcion = row[4]
                         cantidad = safe_int(row[5])
                         stock_real = safe_int(row[6])

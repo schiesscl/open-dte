@@ -23,6 +23,43 @@ window.OpenDTEGuiaAbastecimiento = (function() {
 
         const productosCatalogo = config.productosCatalogo || [];
 
+        function mostrarPasoGuiaItems() {
+            paso1?.classList.add('d-none');
+            [paso2, btnAtras, btnConfirmar].forEach(el => el?.classList.remove('d-none'));
+        }
+
+        function restaurarBotonConfirmar() {
+            btnConfirmar.disabled = false;
+            btnConfirmar.innerHTML = '<i class="bi bi-check2-all me-1" aria-hidden="true"></i> Confirmar e Incrementar Stock';
+        }
+
+        function validarFilasGuia() {
+            const filas = [...(tablaItemsBody?.querySelectorAll('.item-fila') || [])];
+            if (!filas.length) {
+                showAlertGuia('Debe haber al menos un ítem para poder ingresar la guía.');
+                return null;
+            }
+            const items = [];
+            for (const [index, fila] of filas.entries()) {
+                const productoId = fila.querySelector('.product-id-val').value;
+                const cantidad = Number(fila.querySelector('.quantity-input').value);
+                if (!productoId) {
+                    showAlertGuia(`El ítem en la fila ${index + 1} no tiene un producto del catálogo asociado.`);
+                    const input = fila.querySelector('.search-input');
+                    input.focus();
+                    input.classList.add('is-invalid');
+                    return null;
+                }
+                if (!Number.isInteger(cantidad) || cantidad <= 0) {
+                    showAlertGuia(`La cantidad del ítem en la fila ${index + 1} debe ser un entero positivo.`);
+                    fila.querySelector('.quantity-input').focus();
+                    return null;
+                }
+                items.push({ producto_id: Number(productoId), cantidad, descripcion_origen: fila.children[1].textContent });
+            }
+            return items;
+        }
+
         function showAlertGuia(mensaje, tipo = 'danger') {
             if (!alertContainerGuia) return;
             alertContainerGuia.innerHTML = `
@@ -114,10 +151,7 @@ window.OpenDTEGuiaAbastecimiento = (function() {
                     inputFolio.value = data.folio;
                 }
 
-                if (paso1) paso1.classList.add('d-none');
-                if (paso2) paso2.classList.remove('d-none');
-                if (btnAtras) btnAtras.classList.remove('d-none');
-                if (btnConfirmar) btnConfirmar.classList.remove('d-none');
+                mostrarPasoGuiaItems();
 
                 if (tablaItemsBody) {
                     tablaItemsBody.innerHTML = '';
@@ -159,7 +193,7 @@ window.OpenDTEGuiaAbastecimiento = (function() {
             tdSelect.innerHTML = `
                 <div class="input-group input-group-sm">
                     <span class="input-group-text"><i class="bi bi-search"></i></span>
-                    <input type="text" class="form-control search-input" placeholder="Buscar por código o descripción..." value="${initialText}" autocomplete="off">
+                    <input type="text" class="form-control search-input" aria-label="Producto del catálogo" placeholder="Buscar por código o descripción..." autocomplete="off">
                     <input type="hidden" class="product-id-val" value="${initialVal}">
                     <button class="btn btn-outline-secondary btn-clear-select" type="button" title="Limpiar selección"><i class="bi bi-x"></i></button>
                 </div>
@@ -167,11 +201,13 @@ window.OpenDTEGuiaAbastecimiento = (function() {
             `;
 
             const tdCant = document.createElement('td');
-            tdCant.innerHTML = `<input type="number" class="form-control form-control-sm text-end quantity-input" value="${cantidad}" min="1">`;
+            tdCant.innerHTML = '<input type="number" aria-label="Cantidad" class="form-control form-control-sm text-end quantity-input" min="1" step="1">';
+            tdCant.querySelector('input').value = cantidad;
+            tdSelect.querySelector('.search-input').value = initialText;
 
             const tdDel = document.createElement('td');
             tdDel.className = 'text-center';
-            tdDel.innerHTML = `<button type="button" class="btn btn-sm btn-outline-danger btn-del-row"><i class="bi bi-trash"></i></button>`;
+            tdDel.innerHTML = '<button type="button" aria-label="Eliminar ítem" class="btn btn-sm btn-outline-danger btn-del-row"><i class="bi bi-trash" aria-hidden="true"></i></button>';
 
             tr.appendChild(tdCod);
             tr.appendChild(tdDesc);
@@ -226,7 +262,7 @@ window.OpenDTEGuiaAbastecimiento = (function() {
                             const itemEl = document.createElement('button');
                             itemEl.type = 'button';
                             itemEl.className = 'dropdown-item small';
-                            itemEl.innerHTML = `<strong>${p.codigo}</strong> - ${p.descripcion}`;
+                            itemEl.textContent = `${p.codigo} - ${p.descripcion}`;
                             itemEl.addEventListener('click', () => {
                                 searchInput.value = `${p.codigo} - ${p.descripcion}`;
                                 productIdVal.value = p.id;
@@ -249,10 +285,7 @@ window.OpenDTEGuiaAbastecimiento = (function() {
 
         if (btnAgregarManual) {
             btnAgregarManual.addEventListener('click', () => {
-                if (paso1) paso1.classList.add('d-none');
-                if (paso2) paso2.classList.remove('d-none');
-                if (btnAtras) btnAtras.classList.remove('d-none');
-                if (btnConfirmar) btnConfirmar.classList.remove('d-none');
+                mostrarPasoGuiaItems();
                 agregarFilaItem('-', 'Ítem Manual', 1, null);
             });
         }
@@ -260,56 +293,16 @@ window.OpenDTEGuiaAbastecimiento = (function() {
         if (btnConfirmar) {
             btnConfirmar.addEventListener('click', async () => {
                 if (alertContainerGuia) alertContainerGuia.innerHTML = '';
-                const folioVal = inputFolio ? inputFolio.value.trim() : '';
+                const folioVal = Number(inputFolio?.value.trim());
 
-                if (!folioVal) {
+                if (!Number.isInteger(folioVal) || folioVal <= 0) {
                     showAlertGuia('El Folio / Número de guía es requerido.');
                     if (inputFolio) inputFolio.focus();
                     return;
                 }
 
-                const filas = tablaItemsBody ? tablaItemsBody.querySelectorAll('.item-fila') : [];
-                if (filas.length === 0) {
-                    showAlertGuia('Debe haber al menos un ítem para poder ingresar la guía.');
-                    return;
-                }
-
-                const itemsToSend = [];
-                let validationFailed = false;
-
-                for (let i = 0; i < filas.length; i++) {
-                    const fila = filas[i];
-                    const searchInput = fila.querySelector('.search-input');
-                    const productIdVal = fila.querySelector('.product-id-val').value;
-                    const quantityVal = fila.querySelector('.quantity-input').value;
-                    const descFila = fila.children[1].textContent;
-
-                    if (!productIdVal) {
-                        showAlertGuia(`El ítem en la fila ${i+1} ("${descFila}") no tiene un producto del catálogo asociado.`);
-                        if (searchInput) {
-                            searchInput.focus();
-                            searchInput.classList.add('is-invalid');
-                        }
-                        validationFailed = true;
-                        break;
-                    }
-
-                    const q = parseInt(quantityVal, 10);
-                    if (isNaN(q) || q <= 0) {
-                        showAlertGuia(`La cantidad del ítem en la fila ${i+1} debe ser un entero positivo.`);
-                        fila.querySelector('.quantity-input').focus();
-                        validationFailed = true;
-                        break;
-                    }
-
-                    itemsToSend.push({
-                        producto_id: parseInt(productIdVal, 10),
-                        cantidad: q,
-                        descripcion_origen: descFila
-                    });
-                }
-
-                if (validationFailed) return;
+                const itemsToSend = validarFilasGuia();
+                if (!itemsToSend) return;
 
                 btnConfirmar.disabled = true;
                 btnConfirmar.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Procesando...';
@@ -322,7 +315,7 @@ window.OpenDTEGuiaAbastecimiento = (function() {
                             'X-CSRFToken': config.csrfToken
                         },
                         body: JSON.stringify({
-                            folio: parseInt(folioVal, 10),
+                            folio: folioVal,
                             items: itemsToSend
                         })
                     });
@@ -333,14 +326,12 @@ window.OpenDTEGuiaAbastecimiento = (function() {
                         window.location.reload();
                     } else {
                         showAlertGuia(data.mensaje || 'Error al procesar la guía de abastecimiento.');
-                        btnConfirmar.disabled = false;
-                        btnConfirmar.innerHTML = '<i class="bi bi-check2-all me-1"></i> Confirmar e Incrementar Stock';
+                        restaurarBotonConfirmar();
                     }
                 } catch (error) {
                     console.error(error);
                     showAlertGuia('Error de red al intentar guardar los datos.');
-                    btnConfirmar.disabled = false;
-                    btnConfirmar.innerHTML = '<i class="bi bi-check2-all me-1"></i> Confirmar e Incrementar Stock';
+                    restaurarBotonConfirmar();
                 }
             });
         }

@@ -69,7 +69,7 @@ def test_procesar_factura_xml_duplicada_no_se_reprocesa(producto_prod1):
 
 
 @pytest.mark.django_db
-def test_procesar_factura_xml_guia_despacho_descuenta_stock(producto_prod1):
+def test_procesar_factura_xml_guia_despacho_pendiente_sin_descontar_stock(producto_prod1):
     xml_bytes = generar_xml_factura(numero=3003, codigo_producto="PROD1", cantidad=15, tipo_dte="52")
     archivo = ContentFile(xml_bytes, name="guia_test.xml")
 
@@ -77,10 +77,10 @@ def test_procesar_factura_xml_guia_despacho_descuenta_stock(producto_prod1):
 
     assert exito is True
     producto_prod1.refresh_from_db()
-    assert producto_prod1.stock_actual == 100 - 15  # 100 inicial, definido en el fixture
+    assert producto_prod1.stock_actual == 100
 
     factura = Factura.objects.get(numero=3003, tipo_documento="GUIA DE DESPACHO")
-    assert factura.estado_despacho == "DESPACHADO"
+    assert factura.estado_despacho == "PENDIENTE"
 
 
 @pytest.mark.django_db
@@ -93,3 +93,4 @@ def test_procesar_factura_xml_nota_credito_aumenta_stock(producto_prod1):
     assert exito is True
     producto_prod1.refresh_from_db()
     assert producto_prod1.stock_actual == 100 + 5
+    assert Factura.objects.get(numero=4004).estado_despacho == 'DESPACHADO'

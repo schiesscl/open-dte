@@ -157,11 +157,11 @@
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th>Nombre del Archivo</th>
-                            <th>Tipo</th>
-                            <th>Tamaño</th>
-                            <th>Modificado</th>
-                            <th class="text-end">Acciones</th>
+                            <th scope="col">Nombre del Archivo</th>
+                            <th scope="col">Tipo</th>
+                            <th scope="col">Tamaño</th>
+                            <th scope="col">Modificado</th>
+                            <th scope="col" class="text-end">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -235,12 +235,12 @@
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th>Nombre del Archivo</th>
-                            <th>Tipo</th>
-                            <th>Tamaño</th>
-                            <th>Modificado</th>
-                            <th>Detalle del Error</th>
-                            <th class="text-end">Acciones</th>
+                            <th scope="col">Nombre del Archivo</th>
+                            <th scope="col">Tipo</th>
+                            <th scope="col">Tamaño</th>
+                            <th scope="col">Modificado</th>
+                            <th scope="col">Detalle del Error</th>
+                            <th scope="col" class="text-end">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -360,11 +360,11 @@
                     <table class="table table-hover align-middle">
                         <thead class="table-light">
                             <tr>
-                                <th>Nombre del Archivo</th>
-                                <th>Tipo</th>
-                                <th>Tamaño</th>
-                                <th>Modificado</th>
-                                <th class="text-end">Acciones</th>
+                                <th scope="col">Nombre del Archivo</th>
+                                <th scope="col">Tipo</th>
+                                <th scope="col">Tamaño</th>
+                                <th scope="col">Modificado</th>
+                                <th scope="col" class="text-end">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -428,12 +428,12 @@
                     <table class="table table-hover align-middle">
                         <thead class="table-light">
                             <tr>
-                                <th>Nombre del Archivo</th>
-                                <th>Tipo</th>
-                                <th>Tamaño</th>
-                                <th>Modificado</th>
-                                <th>Detalle del Error</th>
-                                <th class="text-end">Acciones</th>
+                                <th scope="col">Nombre del Archivo</th>
+                                <th scope="col">Tipo</th>
+                                <th scope="col">Tamaño</th>
+                                <th scope="col">Modificado</th>
+                                <th scope="col">Detalle del Error</th>
+                                <th scope="col" class="text-end">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -593,10 +593,11 @@
                         const key = `synced_${file.name}_${file.size}_${file.lastModified}`;
                         currentScanKeys.add(key);
                         
-                        if (!localStorage.getItem(key)) {
+                        if (window.syncPolicy.shouldUpload(localStorage, key, file.name)) {
                             addLog(`Detectado nuevo archivo local: <strong>${file.name}</strong> (${(file.size/1024).toFixed(1)} KB). Subiendo...`, 'info');
                             
                             const res = await window.globalSync.uploadFile(file);
+                            window.syncPolicy.recordResult(localStorage, key, res);
                             if (res.exito) {
                                 localStorage.setItem(key, 'true');
                                 filesUploaded++;

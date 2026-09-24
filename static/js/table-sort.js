@@ -108,10 +108,10 @@ window.OpenDTETableSort = (function() {
             let valB = tdB.textContent.trim();
 
             // Intento numérico (para stock, precios, etc)
-            const numA = parseFloat(valA.replace(/\$/g, '').replace(/\./g, '').replace(',', '.'));
-            const numB = parseFloat(valB.replace(/\$/g, '').replace(/\./g, '').replace(',', '.'));
+            const numA = Number.parseFloat(valA.replace(/\$/g, '').replace(/\./g, '').replace(',', '.'));
+            const numB = Number.parseFloat(valB.replace(/\$/g, '').replace(/\./g, '').replace(',', '.'));
 
-            if (!isNaN(numA) && !isNaN(numB)) {
+            if (!Number.isNaN(numA) && !Number.isNaN(numB)) {
                 return (numA - numB) * direccion;
             }
 

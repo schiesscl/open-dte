@@ -1,6 +1,9 @@
 from django import forms
 from .models import Producto, Cliente, Factura
 
+CSS_FORM_CONTROL = 'form-control'
+
+
 class ProductoForm(forms.ModelForm):
 
     class Meta:
@@ -8,20 +11,20 @@ class ProductoForm(forms.ModelForm):
         fields = ['codigo', 'codigo_alternativo', 'cant_alternativo', 'codigo_alternativo_2', 'cant_alternativo_2', 'codigo_alternativo_3', 'cant_alternativo_3', 'descripcion', 'unidad_medida',
                   'stock_actual', 'stock_real', 'stock_minimo', 'stock_sistema', 'precio_venta', 'activo']
         widgets = {
-            'codigo': forms.TextInput(attrs={'class': 'form-control'}),
-            'codigo_alternativo': forms.TextInput(attrs={'class': 'form-control'}),
-            'cant_alternativo': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
-            'codigo_alternativo_2': forms.TextInput(attrs={'class': 'form-control'}),
-            'cant_alternativo_2': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
-            'codigo_alternativo_3': forms.TextInput(attrs={'class': 'form-control'}),
-            'cant_alternativo_3': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
-            'descripcion': forms.TextInput(attrs={'class': 'form-control'}),
-            'unidad_medida': forms.TextInput(attrs={'class': 'form-control'}),
-            'stock_actual': forms.NumberInput(attrs={'class': 'form-control'}),
-            'stock_real': forms.NumberInput(attrs={'class': 'form-control'}),
-            'stock_minimo': forms.NumberInput(attrs={'class': 'form-control'}),
-            'stock_sistema': forms.NumberInput(attrs={'class': 'form-control'}),
-            'precio_venta': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'codigo': forms.TextInput(attrs={'class': CSS_FORM_CONTROL}),
+            'codigo_alternativo': forms.TextInput(attrs={'class': CSS_FORM_CONTROL}),
+            'cant_alternativo': forms.NumberInput(attrs={'class': CSS_FORM_CONTROL, 'min': '1'}),
+            'codigo_alternativo_2': forms.TextInput(attrs={'class': CSS_FORM_CONTROL}),
+            'cant_alternativo_2': forms.NumberInput(attrs={'class': CSS_FORM_CONTROL, 'min': '1'}),
+            'codigo_alternativo_3': forms.TextInput(attrs={'class': CSS_FORM_CONTROL}),
+            'cant_alternativo_3': forms.NumberInput(attrs={'class': CSS_FORM_CONTROL, 'min': '1'}),
+            'descripcion': forms.TextInput(attrs={'class': CSS_FORM_CONTROL}),
+            'unidad_medida': forms.TextInput(attrs={'class': CSS_FORM_CONTROL}),
+            'stock_actual': forms.NumberInput(attrs={'class': CSS_FORM_CONTROL}),
+            'stock_real': forms.NumberInput(attrs={'class': CSS_FORM_CONTROL}),
+            'stock_minimo': forms.NumberInput(attrs={'class': CSS_FORM_CONTROL}),
+            'stock_sistema': forms.NumberInput(attrs={'class': CSS_FORM_CONTROL}),
+            'precio_venta': forms.NumberInput(attrs={'class': CSS_FORM_CONTROL, 'step': '0.01'}),
             'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
@@ -41,12 +44,12 @@ class ClienteForm(forms.ModelForm):
         fields = ['rut', 'razon_social', 'giro', 'direccion', 'comuna', 'ciudad', 'telefono']
         widgets = {
             'rut': forms.TextInput(attrs={'class': 'form-control rut-input'}),
-            'razon_social': forms.TextInput(attrs={'class': 'form-control'}),
-            'giro': forms.TextInput(attrs={'class': 'form-control'}),
-            'direccion': forms.TextInput(attrs={'class': 'form-control'}),
-            'comuna': forms.TextInput(attrs={'class': 'form-control'}),
-            'ciudad': forms.TextInput(attrs={'class': 'form-control'}),
-            'telefono': forms.TextInput(attrs={'class': 'form-control'}),
+            'razon_social': forms.TextInput(attrs={'class': CSS_FORM_CONTROL}),
+            'giro': forms.TextInput(attrs={'class': CSS_FORM_CONTROL}),
+            'direccion': forms.TextInput(attrs={'class': CSS_FORM_CONTROL}),
+            'comuna': forms.TextInput(attrs={'class': CSS_FORM_CONTROL}),
+            'ciudad': forms.TextInput(attrs={'class': CSS_FORM_CONTROL}),
+            'telefono': forms.TextInput(attrs={'class': CSS_FORM_CONTROL}),
         }
 
     def clean_rut(self):
@@ -62,5 +65,5 @@ class FacturaForm(forms.ModelForm):
         fields = ['numero', 'fecha_emision']
         widgets = {
             'numero': forms.NumberInput(attrs={'class': 'form-control bg-light', 'readonly': 'readonly'}),
-            'fecha_emision': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_emision': forms.DateInput(attrs={'class': CSS_FORM_CONTROL, 'type': 'date'}),
         }
