@@ -4,6 +4,7 @@ import logging
 import time
 from django.conf import settings
 from django.core.files import File
+from django.core.paginator import Paginator
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
@@ -12,7 +13,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.db.models import Sum, ProtectedError
 from .models import Factura, Cliente, Producto, DetalleFactura, Despacho
-from .utils import procesar_factura_xml, procesar_factura_pdf
+from .utils import procesar_factura_xml, procesar_factura_pdf, es_nombre_archivo_no_dte
 from .forms import ProductoForm, ClienteForm, FacturaForm
 from .roles import bloquear_seccion
 
@@ -193,7 +194,20 @@ def dashboard(request):
 
     # 4. Listar documentos
     ultimas_facturas = Factura.objects.all().order_by('-fecha_subida')[:10]
-    documentos_periodo = qs_periodo.order_by('-fecha_emision', '-numero')[:50]
+    total_documentos_periodo = qs_periodo.count()
+    per_page = request.GET.get('per_page', '50').strip().lower()
+    if per_page not in {'20', '50', '100', '200', 'todos'}:
+        per_page = '50'
+    cantidad_por_pagina = max(total_documentos_periodo, 1) if per_page == 'todos' else int(per_page)
+    documentos_periodo = Paginator(
+        qs_periodo.select_related('cliente').prefetch_related('detalles__producto')
+        .order_by('-fecha_emision', '-numero', '-pk'), cantidad_por_pagina,
+    ).get_page(request.GET.get('page', 1))
+    filtros = request.GET.copy()
+    filtros.pop('page', None)
+    filtros.pop('per_page', None)
+    parametros_pagina = filtros.copy()
+    parametros_pagina['per_page'] = per_page
 
     contexto = {
         'total_ventas': total_ventas,
@@ -208,6 +222,12 @@ def dashboard(request):
 
         'ultimas_facturas': ultimas_facturas,
         'documentos_periodo': documentos_periodo,
+        'page_obj': documentos_periodo,
+        'per_page': per_page,
+        'opciones_per_page': ['20', '50', '100', '200', 'todos'],
+        'total_documentos_periodo': total_documentos_periodo,
+        'filtros_paginacion': list(filtros.items()),
+        'querystring_filtros': parametros_pagina.urlencode(),
 
         # Filtros activos para repoblar el formulario
         'periodo_activo': periodo,
@@ -548,7 +568,7 @@ def preparar_despacho(request):
     if buscar:
         try:
             num = int(buscar)
-            qs = Factura.objects.filter(numero=num).exclude(tipo_documento__in=['GUIA DE DESPACHO', 'NOTA DE CREDITO'])
+            qs = Factura.objects.filter(numero=num).exclude(tipo_documento='NOTA DE CREDITO')
 
             if qs.exists():
                 if tipo:
@@ -590,12 +610,16 @@ def preparar_despacho(request):
 
 @login_required
 @bloquear_seccion('despacho', "Acceso restringido: tu perfil no tiene acceso al módulo de Despachos.")
+@transaction.atomic
 def confirmar_despacho(request, id):
     """ Marca una factura o nota de crédito como despachada/procesada y descuenta o devuelve stock """
     if request.method == 'POST':
-        factura = get_object_or_404(Factura, id=id)
+        factura = get_object_or_404(Factura.objects.select_for_update(), id=id)
 
-        tipo_lbl = "Nota de crédito" if factura.tipo_documento == "NOTA DE CREDITO" else "Factura"
+        tipo_lbl = {
+            'GUIA DE DESPACHO': 'Guía de despacho',
+            'NOTA DE CREDITO': 'Nota de crédito',
+        }.get(factura.tipo_documento, 'Factura')
 
         if factura.estado_despacho == 'DESPACHADO':
             messages.warning(request, f"La {tipo_lbl.lower()} Nº {factura.numero} ya se encuentra procesada.")
@@ -606,7 +630,7 @@ def confirmar_despacho(request, id):
             factura.save()
 
             for detalle in factura.detalles.all():
-                producto = detalle.producto
+                producto = Producto.objects.select_for_update().get(pk=detalle.producto_id)
                 if factura.tipo_documento == 'NOTA DE CREDITO':
                     producto.stock_actual += int(detalle.cantidad)
                     producto.motivo_modificacion = f"Devolución - Nota de Crédito Nº {factura.numero}"
@@ -614,7 +638,7 @@ def confirmar_despacho(request, id):
                     producto.stock_actual -= int(detalle.cantidad)
                     if producto.stock_actual < 0:
                         producto.stock_actual = 0
-                    producto.motivo_modificacion = f"Despacho - Factura Nº {factura.numero}"
+                    producto.motivo_modificacion = f"Despacho - {tipo_lbl} Nº {factura.numero}"
                 producto.usuario_modificador = request.user if request.user.is_authenticated else None
                 producto.save()
 
@@ -658,6 +682,16 @@ def procesar_carpeta_compartida_automatico(user=None):
                 filepath = os.path.join(incoming_dir, filename)
                 if os.path.isfile(filepath):
                     filename_limpio = os.path.basename(filename)
+                    if es_nombre_archivo_no_dte(filename_limpio):
+                        try:
+                            os.makedirs(error_dir, exist_ok=True)
+                            destino = os.path.join(error_dir, filename_limpio)
+                            _mover_archivo_seguro(filepath, destino)
+                            with open(destino + '.err', 'w', encoding='utf-8') as log_error:
+                                log_error.write('Archivo omitido: libro, reporte o cotización; no es un DTE individual.')
+                        except OSError:
+                            logger.exception('No se pudo apartar el archivo no DTE %s', filename_limpio)
+                        continue
                     exito = False
                     mensaje = ""
 
@@ -1102,6 +1136,8 @@ def compartida_api_status(request):
             if os.path.exists(error_dir):
                 for filename in os.listdir(error_dir):
                     if filename.lower().endswith(('.pdf', '.xml')):
+                        if es_nombre_archivo_no_dte(filename):
+                            continue
                         filepath = os.path.join(error_dir, filename)
                         if os.path.isfile(filepath):
                             mtime = os.path.getmtime(filepath)
@@ -1203,7 +1239,7 @@ def subir_a_compartida(request):
                     f_err.write(str(e))
             except Exception as ex:
                 logger.error("No se pudo mover el archivo con error o escribir el log .err en subir_a_compartida: %s", ex)
-        return JsonResponse({'exito': False, 'mensaje': f'Error crítico al procesar en el servidor: {str(e)}'})
+        return JsonResponse({'exito': False, 'retryable': True, 'mensaje': f'Error crítico al procesar en el servidor: {str(e)}'}, status=500)
 
 
 @require_POST

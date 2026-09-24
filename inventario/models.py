@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 class Sucursal(models.Model):
     nombre = models.CharField(max_length=100, unique=True, verbose_name="Nombre Sucursal")
     codigo = models.CharField(max_length=20, unique=True, verbose_name="Código")
-    direccion = models.CharField(max_length=255, blank=True, null=True)
+    direccion = models.CharField(max_length=255, blank=True, default='')
     activa = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
@@ -39,25 +39,25 @@ class Bodega(models.Model):
 class Cliente(models.Model):
     rut = models.CharField(max_length=15, unique=True, verbose_name="R.U.T.")
     razon_social = models.CharField(max_length=255, verbose_name="Razón Social")
-    giro = models.CharField(max_length=255, null=True, blank=True)
+    giro = models.CharField(max_length=255, blank=True, default='')
     direccion = models.CharField(max_length=255)
     comuna = models.CharField(max_length=100)
     ciudad = models.CharField(max_length=100)
-    telefono = models.CharField(max_length=50, null=True, blank=True)
+    telefono = models.CharField(max_length=50, blank=True, default='')
 
     def __str__(self) -> str:
         return str(f"{self.razon_social} ({self.rut})")
 
 class Producto(models.Model):
     codigo = models.CharField(max_length=50, unique=True, verbose_name="Código Principal")
-    codigo_alternativo = models.CharField(max_length=50, blank=True, null=True, verbose_name="Código Alternativo")
+    codigo_alternativo = models.CharField(max_length=50, blank=True, default='', verbose_name="Código Alternativo")
     cant_alternativo = models.IntegerField(default=1, verbose_name="Cantidad Alternativo 1 (Unidad)")
-    codigo_alternativo_2 = models.CharField(max_length=50, blank=True, null=True, verbose_name="Código Alternativo 2")
+    codigo_alternativo_2 = models.CharField(max_length=50, blank=True, default='', verbose_name="Código Alternativo 2")
     cant_alternativo_2 = models.IntegerField(default=1, verbose_name="Cantidad Alternativo 2 (Caja)")
-    codigo_alternativo_3 = models.CharField(max_length=50, blank=True, null=True, verbose_name="Código Alternativo 3")
+    codigo_alternativo_3 = models.CharField(max_length=50, blank=True, default='', verbose_name="Código Alternativo 3")
     cant_alternativo_3 = models.IntegerField(default=1, verbose_name="Cantidad Alternativo 3")
     descripcion = models.CharField(max_length=255)
-    unidad_medida = models.CharField(max_length=10, default="UN", blank=True, null=True)
+    unidad_medida = models.CharField(max_length=10, default="UN", blank=True)
 
     # Inventario - Stocks
     stock_actual = models.IntegerField(default=0, blank=True, null=True, verbose_name="Stock Actual")
@@ -95,48 +95,33 @@ class Producto(models.Model):
         self.usuario_modificador = None
         self.motivo_modificacion = None
 
+    def _obtener_stocks_anteriores(self):
+        if self.pk is None:
+            return None
+        return Producto.objects.filter(pk=self.pk).values('stock_actual', 'stock_real').first()
+
+    def _registrar_historial_stock(self, anterior):
+        valores = anterior or {'stock_actual': None, 'stock_real': None}
+        if anterior and all(valores[campo] == getattr(self, campo) for campo in valores):
+            return
+        usuario = self.usuario_modificador
+        if usuario and not usuario.is_authenticated:
+            usuario = None
+        motivo = self.motivo_modificacion or ('Edición de producto' if anterior else 'Creación de producto')
+        HistorialStock.objects.create(
+            producto=self,
+            stock_actual_anterior=valores['stock_actual'],
+            stock_actual_nuevo=self.stock_actual,
+            stock_real_anterior=valores['stock_real'],
+            stock_real_nuevo=self.stock_real,
+            detalle=motivo,
+            usuario=usuario,
+        )
+
     def save(self, *args, **kwargs):
-        is_new = self.pk is None
-        stock_actual_anterior = None
-        stock_real_anterior = None
-
-        if not is_new:
-            try:
-                orig = Producto.objects.only('stock_actual', 'stock_real').get(pk=self.pk)
-                stock_actual_anterior = orig.stock_actual
-                stock_real_anterior = orig.stock_real
-            except Producto.DoesNotExist:
-                is_new = True
-
+        anterior = self._obtener_stocks_anteriores()
         super().save(*args, **kwargs)
-
-        hizo_cambios = False
-        detalle_log = getattr(self, 'motivo_modificacion', None)
-
-        if is_new:
-            hizo_cambios = True
-            if not detalle_log:
-                detalle_log = "Creación de producto"
-        else:
-            if stock_actual_anterior != self.stock_actual or stock_real_anterior != self.stock_real:
-                hizo_cambios = True
-                if not detalle_log:
-                    detalle_log = "Edición de producto"
-
-        if hizo_cambios:
-            usuario_mod = getattr(self, 'usuario_modificador', None)
-            if usuario_mod and not usuario_mod.is_authenticated:
-                usuario_mod = None
-
-            HistorialStock.objects.create(
-                producto=self,
-                stock_actual_anterior=stock_actual_anterior,
-                stock_actual_nuevo=self.stock_actual,
-                stock_real_anterior=stock_real_anterior,
-                stock_real_nuevo=self.stock_real,
-                detalle=detalle_log,
-                usuario=usuario_mod
-            )
+        self._registrar_historial_stock(anterior)
 
 class Factura(models.Model):
     usuario_creador = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
@@ -148,7 +133,7 @@ class Factura(models.Model):
     iva = models.IntegerField()
     total = models.IntegerField()
     fecha_subida = models.DateTimeField(auto_now_add=True)
-    archivo_origen = models.CharField(max_length=255, blank=True, null=True, verbose_name="Archivo de origen")
+    archivo_origen = models.CharField(max_length=255, blank=True, default='', verbose_name="Archivo de origen")
 
     ESTADOS_DESPACHO = [
         ('PENDIENTE', 'Pendiente'),
@@ -208,7 +193,7 @@ class HistorialStock(models.Model):
     stock_real_nuevo = models.IntegerField(null=True, blank=True)
 
     # Metadatos del cambio
-    detalle = models.CharField(max_length=255, blank=True, null=True)
+    detalle = models.CharField(max_length=255, blank=True, default='')
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
@@ -245,8 +230,8 @@ def revertir_stock_factura_pre_delete(sender, instance, **kwargs):
 
                 producto.usuario_modificador = None
                 producto.save()
-        except Exception as e:
-            logger.error("Error al revertir stock de la factura en pre_delete: %s", e)
+        except Exception:
+            logger.exception("Error al revertir stock de la factura en pre_delete")
 
 @receiver(post_delete, sender=Factura)
 def eliminar_archivo_factura_post_delete(sender, instance, **kwargs):
@@ -270,5 +255,5 @@ def eliminar_archivo_factura_post_delete(sender, instance, **kwargs):
             err_log = err_path + ".err"
             if os.path.exists(err_log):
                 os.remove(err_log)
-        except Exception as e:
-            logger.error("Error al eliminar archivo de factura: %s", e)
+        except Exception:
+            logger.exception("Error al eliminar archivo de factura")

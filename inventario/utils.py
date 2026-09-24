@@ -2,6 +2,7 @@ import io
 import os
 import re
 import logging
+import unicodedata
 import xml.etree.ElementTree as ET
 
 import pdfplumber
@@ -10,6 +11,40 @@ from decimal import Decimal
 from .models import Cliente, Producto, Factura, DetalleFactura
 
 logger = logging.getLogger(__name__)
+
+
+def _normalizar_texto(texto):
+    texto = unicodedata.normalize('NFD', texto)
+    return ' '.join(''.join(c for c in texto if not unicodedata.combining(c)).upper().split())
+
+
+def es_nombre_archivo_no_dte(nombre_archivo):
+    nombre = _normalizar_texto(os.path.basename(str(nombre_archivo or '')).replace('_', ' ').replace('-', ' '))
+    return bool(re.search(
+        r'\b(?:LIBRO (?:DE )?(?:VENTAS|COMPRAS|GUIAS?)|RESUMEN (?:DE )?VENTAS|'
+        r'REGISTRO (?:DE )?VENTAS|REPORTES?|BALANCE|CARTOLA|COTIZACION|COTIZ|PRESUPUESTO)\b',
+        nombre,
+    ))
+
+
+def _determinar_tipo_doc_pdf(texto):
+    # Los encabezados pueden compartir línea con el emisor o ocupar varias líneas.
+    texto = '\n'.join(_normalizar_texto(linea) for linea in texto.splitlines())
+    patrones = {
+        'GUIA DE DESPACHO': r'GUIA\s+(?:DE\s+)?DESPACHO(?:\s+ELECTRONICA)?',
+        'NOTA DE CREDITO': r'NOTA\s+DE\s+CREDITO(?:\s+ELECTRONICA)?',
+        'FACTURA ELECTRONICA EXENTA': r'FACTURA\s+(?:(?:NO\s+AFECTA\s+O\s+)?EXENTA\s+ELECTRONICA|ELECTRONICA\s+EXENTA)',
+        'FACTURA ELECTRONICA': r'FACTURA\s+ELECTRONICA',
+    }
+    candidatos = []
+    for tipo, patron in patrones.items():
+        for match in re.finditer(r'\b' + patron + r'\b', texto):
+            prefijo = texto[texto.rfind('\n', 0, match.start()) + 1:match.start()]
+            if not re.search(r'\b(?:REFERENCIA\w*|COTIZACION|PRESUPUESTO)\b', prefijo):
+                candidatos.append((match.start(), tipo))
+    if candidatos:
+        return min(candidatos, key=lambda candidato: candidato[0])[1]
+    return None
 
 def calcular_dv(rut_sin_dv):
     """
@@ -92,6 +127,8 @@ def _extraer_xml_desde_texto_pdf(texto):
 
 def procesar_factura_pdf(archivo, usuario):
     """Lee un PDF e intenta extraer los datos ya sea del XML DTE o escaneando el texto impreso."""
+    if es_nombre_archivo_no_dte(getattr(archivo, 'name', '')):
+        return False, 'Archivo omitido: es un libro, reporte o cotización, no un DTE individual.'
     try:
         archivo.seek(0)
         with pdfplumber.open(archivo) as pdf:
@@ -108,19 +145,16 @@ def procesar_factura_pdf(archivo, usuario):
             archivo_xml = ContentFile(xml_bytes, name=getattr(archivo, 'name', 'factura_extraida.xml').replace('.pdf', '.xml'))
             return procesar_factura_xml(archivo_xml, usuario)
 
+        tipo_documento = _determinar_tipo_doc_pdf(texto)
+        if not tipo_documento:
+            return False, 'Tipo de documento no reconocido: debe ser Factura, Guía de Despacho o Nota de Crédito; no cotizaciones ni reportes.'
+
         # 2. Parsing directo a partir del texto impreso del PDF
         # Identificar Folio / Número
         numero_match = re.search(r"Nº\s*(\d+)", texto)
         if not numero_match:
             return False, "No se pudo encontrar el Folio (Número) de la factura en el texto."
         numero_factura = int(numero_match.group(1))
-
-        tipo_documento = "FACTURA ELECTRONICA"
-        texto_upper = texto.upper()
-        if "GUIA DE DESPACHO" in texto_upper or "GUIA DESPACHO" in texto_upper:
-            tipo_documento = "GUIA DE DESPACHO"
-        elif "NOTA DE CREDITO" in texto_upper or "NOTA DE CREDITO" in texto_upper.replace("É", "E"):
-            tipo_documento = "NOTA DE CREDITO"
 
         if Factura.objects.filter(numero=numero_factura, tipo_documento=tipo_documento).exists():
             if tipo_documento == "GUIA DE DESPACHO":
@@ -233,21 +267,13 @@ def procesar_factura_pdf(archivo, usuario):
                         total_linea=total_linea
                     )
 
-                    # Modificación automática de stock para guías de despacho y notas de crédito
-                    if tipo_documento == 'GUIA DE DESPACHO':
-                        producto.stock_actual -= int(cantidad)
-                        if producto.stock_actual < 0:
-                            producto.stock_actual = 0
-                        producto.motivo_modificacion = f"Carga Automática - Guía de Despacho Nº {numero_factura}"
-                        producto.usuario_modificador = usuario_valido
-                        producto.save()
-                    elif tipo_documento == 'NOTA DE CREDITO':
+                    if tipo_documento == 'NOTA DE CREDITO':
                         producto.stock_actual += int(cantidad)
                         producto.motivo_modificacion = f"Devolución Automática - Nota de Crédito Nº {numero_factura}"
                         producto.usuario_modificador = usuario_valido
                         producto.save()
 
-            if tipo_documento in ["GUIA DE DESPACHO", "NOTA DE CREDITO"]:
+            if tipo_documento == "NOTA DE CREDITO":
                 factura.estado_despacho = 'DESPACHADO'
                 factura.save()
 
@@ -265,6 +291,8 @@ def procesar_factura_pdf(archivo, usuario):
 @transaction.atomic
 def procesar_factura_xml(archivo, usuario):
     """ Lee el XML del SII y guarda todo en la base de datos """
+    if es_nombre_archivo_no_dte(getattr(archivo, 'name', '')):
+        return False, 'Archivo omitido: es un libro, reporte o cotización, no un DTE individual.'
     try:
         # 1. Leer el archivo XML
         tree = ET.parse(archivo)
@@ -276,7 +304,9 @@ def procesar_factura_xml(archivo, usuario):
         fecha_emision = root.find('.//FchEmis').text  # Formato YYYY-MM-DD
 
         tipo_dte_nodo = root.find('.//TipoDTE')
-        tipo_dte = tipo_dte_nodo.text if tipo_dte_nodo is not None else "33"
+        tipo_dte = (tipo_dte_nodo.text or '').strip() if tipo_dte_nodo is not None else ''
+        if tipo_dte not in {'33', '34', '52', '61'}:
+            return False, 'Tipo de documento no reconocido o no soportado.'
         tipo_documento = "FACTURA ELECTRONICA"
         if tipo_dte == "52":
             tipo_documento = "GUIA DE DESPACHO"
@@ -299,7 +329,7 @@ def procesar_factura_xml(archivo, usuario):
         rut_cliente = root.find('.//RUTRecep').text
         razon_social = root.find('.//RznSocRecep').text
 
-        giro = root.find('.//GiroRecep').text if root.find('.//GiroRecep') is not None else ""
+        giro = root.findtext('.//GiroRecep') or ''
         direccion = root.find('.//DirRecep').text if root.find('.//DirRecep') is not None else ""
         comuna = root.find('.//CmnaRecep').text if root.find('.//CmnaRecep') is not None else ""
         ciudad = root.find('.//CiudadRecep').text if root.find('.//CiudadRecep') is not None else ""
@@ -368,21 +398,13 @@ def procesar_factura_xml(archivo, usuario):
                 total_linea=total_linea
             )
 
-            # Modificación automática de stock para guías de despacho y notas de crédito
-            if tipo_documento == 'GUIA DE DESPACHO':
-                producto.stock_actual -= int(cantidad)
-                if producto.stock_actual < 0:
-                    producto.stock_actual = 0
-                producto.motivo_modificacion = f"Carga Automática - Guía de Despacho Nº {numero_factura}"
-                producto.usuario_modificador = usuario_valido
-                producto.save()
-            elif tipo_documento == 'NOTA DE CREDITO':
+            if tipo_documento == 'NOTA DE CREDITO':
                 producto.stock_actual += int(cantidad)
                 producto.motivo_modificacion = f"Devolución Automática - Nota de Crédito Nº {numero_factura}"
                 producto.usuario_modificador = usuario_valido
                 producto.save()
 
-        if tipo_documento in ["GUIA DE DESPACHO", "NOTA DE CREDITO"]:
+        if tipo_documento == "NOTA DE CREDITO":
             factura.estado_despacho = 'DESPACHADO'
             factura.save()
 
@@ -395,6 +417,8 @@ def procesar_factura_xml(archivo, usuario):
         return True, f"{nombre_doc} {numero_factura} procesada con éxito."
 
     except Exception as e:
+        transaction.set_rollback(True)
+        logger.exception('Error al importar el XML DTE')
         return False, f"Error al procesar el archivo: {str(e)}"
 
 def parsear_guia_abastecimiento(archivo):
